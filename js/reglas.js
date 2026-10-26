@@ -107,3 +107,47 @@ export function evaluarDirectaRepetida(contratos, { fechaReferencia, ventanaMese
     cantidad: enVentana.length, umbral, ventanaMeses, contratos: enVentana,
   };
 }
+
+// Mayor número de directas en cualquier ventana de `ventanaMeses` (para la veeduría de una entidad o un proveedor).
+export function maxDirectasEnVentana(contratos, { ventanaMeses = 12, umbral = 3 } = {}) {
+  let mejor = { nivel: 'ok', cantidad: 0, umbral, ventanaMeses, contratos: [] };
+  const fechas = [...new Set(contratos.filter(c => c.fecha && claseModalidad(c.modalidad) === 'directa').map(c => c.fecha))];
+  for (const f of fechas) {
+    const r = evaluarDirectaRepetida(contratos, { fechaReferencia: f, ventanaMeses, umbral });
+    if (r.cantidad > mejor.cantidad) mejor = { ...r, hasta: f };
+  }
+  return mejor;
+}
+
+/**
+ * Indicio de fraccionamiento: contratos con el mismo proveedor, firmados dentro de `ventanaDias`,
+ * cada uno por debajo del tope (p. ej. la mínima cuantía de la entidad), cuya suma supera ese tope.
+ * contratos: [{ id, fecha: 'YYYY-MM-DD', valor, proveedor }]. Devuelve los grupos encontrados (sin solaparse).
+ */
+export function evaluarFraccionamiento(contratos, { tope, ventanaDias = 30 } = {}) {
+  const t = Number(tope);
+  if (!Number.isFinite(t) || t <= 0) return { nivel: 'sin_datos', motivo: 'Falta el tope de cuantía.', grupos: [] };
+  const porProveedor = new Map();
+  for (const c of contratos) {
+    const v = Number(c.valor);
+    if (!c.proveedor || !c.fecha || !Number.isFinite(v) || v <= 0 || v > t) continue;
+    if (!porProveedor.has(c.proveedor)) porProveedor.set(c.proveedor, []);
+    porProveedor.get(c.proveedor).push({ ...c, valor: v });
+  }
+  const dia = f => Date.parse(f + 'T00:00:00Z') / 86400000;
+  const grupos = [];
+  for (const [proveedor, lista] of porProveedor) {
+    lista.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    let i = 0;
+    while (i < lista.length) {
+      let j = i;
+      while (j + 1 < lista.length && dia(lista[j + 1].fecha) - dia(lista[i].fecha) <= ventanaDias) j++;
+      const grupo = lista.slice(i, j + 1);
+      const suma = grupo.reduce((s, c) => s + c.valor, 0);
+      if (grupo.length >= 2 && suma > t) { grupos.push({ proveedor, contratos: grupo, suma }); i = j + 1; }
+      else i++;
+    }
+  }
+  grupos.sort((a, b) => b.suma - a.suma);
+  return { nivel: grupos.length ? 'media' : 'ok', grupos, tope: t, ventanaDias };
+}

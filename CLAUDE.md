@@ -12,7 +12,9 @@ App web (PWA) de uso personal para un abogado de contratación estatal en Colomb
 - `js/api.js`: cliente Socrata, caché en localStorage (TTL 6 h) y token opcional `X-App-Token`.
 - `js/reglas.js`: funciones puras sin DOM. Cada una tiene su prueba en `tests/reglas.test.js`.
 - `js/festivos.js` (festivos de Colombia, Ley 51/1983) y `js/smmlv.js` (tabla de SMMLV).
-- `js/vistas/*.js`: buscar, ficha, ayudas, reglas.
+- `js/vistas/*.js`: buscar, ficha, ayudas, reglas y veeduria.
+- `js/vistas/veeduria.js`: veeduría de una entidad (`#/entidad/<nit>?desde=&hasta=`) o de un proveedor (`#/proveedor/<doc>`), y su buscador (`#/veeduria`). Los totales se calculan en el navegador tras quitar duplicados; no uses `$group` de la API para sumar valores (ver docs/esquemas.md, hallazgo 13).
+- Publicación: GitHub Pages, desde la rama `main` de `juanjosehuerfano-lawyer/revisor-secop`. Al cambiar archivos de la interfaz, sube `VERSION` en `sw.js`.
 - `sw.js` y `manifest.webmanifest`: PWA.
 
 ## Correr

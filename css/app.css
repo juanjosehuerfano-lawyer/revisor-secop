@@ -197,6 +197,18 @@ details.ayuda summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 @keyframes girar { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
 
+/* Veeduría */
+.barras { display: grid; gap: 6px; }
+.barra-fila { display: grid; grid-template-columns: 72px 1fr minmax(130px, auto); gap: 10px; align-items: center; font-size: .85rem; }
+.barra-etq { color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.barra-pista { background: var(--superficie-2); border-radius: 4px; height: 14px; overflow: hidden; }
+.barra { display: block; height: 100%; background: var(--acento); border-radius: 4px; }
+.barra-val { font-variant-numeric: tabular-nums; text-align: right; }
+@media (max-width: 520px) { .barra-fila { grid-template-columns: 60px 1fr; } .barra-val { grid-column: 1 / -1; text-align: left; } }
+.kpis .campo dd { font-size: 1.15rem; font-weight: 600; }
+.texto-alta { color: var(--alta); }
+.periodo { margin-top: 12px; }
+
 .solo-imprimir { display: none; }
 
 /* Impresión / exportar a PDF */

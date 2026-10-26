@@ -1,6 +1,6 @@
 // Una prueba (o más) por regla de alerta. Corren en el navegador (tests/index.html) y en Node (tests/reglas.test.js).
 
-import { evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida, claseModalidad } from '../js/reglas.js';
+import { evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida, claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento } from '../js/reglas.js';
 import { festivos, diasHabilesEntre } from '../js/festivos.js';
 
 function iguales(real, esperado, msg = '') {
@@ -105,6 +105,34 @@ export const CASOS = [
   ['Directa repetida: 2 directas → sin alerta; sin fecha de referencia → sin datos', () => {
     iguales(evaluarDirectaRepetida([{ fecha: '2025-09-01', modalidad: 'Contratación directa' }, { fecha: '2025-01-01', modalidad: 'Contratación directa' }], { fechaReferencia: '2025-09-01' }).nivel, 'ok');
     iguales(evaluarDirectaRepetida([], {}).nivel, 'sin_datos');
+  }],
+
+  ['Directa por ventana: encuentra la ventana de 12 meses con más directas', () => {
+    const c = ['2023-01-10', '2023-03-01', '2024-06-01', '2024-07-01', '2024-09-01', '2025-05-01'].map(f => ({ fecha: f, modalidad: 'Contratación directa' }));
+    const r = maxDirectasEnVentana(c);
+    iguales(r.cantidad, 4); iguales(r.hasta, '2025-05-01'); iguales(r.nivel, 'media');
+  }],
+
+  // ----- Fraccionamiento
+  ['Fraccionamiento: 3 contratos bajo el tope en 30 días que suman más → aviso', () => {
+    const r = evaluarFraccionamiento([
+      { id: 'a', fecha: '2025-03-01', valor: 40e6, proveedor: 'P1' },
+      { id: 'b', fecha: '2025-03-10', valor: 45e6, proveedor: 'P1' },
+      { id: 'c', fecha: '2025-03-25', valor: 30e6, proveedor: 'P1' },
+      { id: 'd', fecha: '2025-03-05', valor: 40e6, proveedor: 'P2' }, // otro proveedor, solo uno
+    ], { tope: 50e6 });
+    iguales(r.nivel, 'media'); iguales(r.grupos.length, 1); iguales(r.grupos[0].contratos.map(x => x.id), ['a', 'b', 'c']); iguales(r.grupos[0].suma, 115e6);
+  }],
+  ['Fraccionamiento: contratos separados más de 30 días o por encima del tope no cuentan', () => {
+    const r = evaluarFraccionamiento([
+      { id: 'a', fecha: '2025-01-01', valor: 40e6, proveedor: 'P1' },
+      { id: 'b', fecha: '2025-02-15', valor: 40e6, proveedor: 'P1' },
+      { id: 'c', fecha: '2025-02-20', valor: 90e6, proveedor: 'P1' },
+    ], { tope: 50e6 });
+    iguales(r.nivel, 'ok');
+  }],
+  ['Fraccionamiento: sin tope → sin datos', () => {
+    iguales(evaluarFraccionamiento([], {}).nivel, 'sin_datos');
   }],
 
   // ----- Clasificación de modalidades (SECOP I y II escriben distinto)

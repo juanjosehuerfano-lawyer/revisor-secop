@@ -20,6 +20,11 @@ CORS: la API responde `Access-Control-Allow-Origin: *`, así que la app puede co
 11. Muchas adiciones en valor se registran con `tipo = "Modificacion General"`, y solo la `descripcion` dice "se adiciona". La app precarga ambas.
 12. Rendimiento de las consultas (medido el 2026-10-25): las igualdades y los `like 'prefijo%'` tardan 0,2–0,7 s. Un `like '%…%'` sobre URL tarda ~13 s en `p6dx-8zbt.urlproceso.url` y ~55 s en `rpmr-utcd.url_contrato`. Por eso la app solo usa la búsqueda por aviso (noticeUID) como último recurso.
 
+13. **Los totales con `$group` sobre SECOP Integrado salen inflados.** Ejemplo: la Alcaldía de Yopal en 2025 tiene 7.239 filas, pero solo 2.857 contratos distintos. Además, el mismo contrato puede traer valores distintos en cada fila (por ejemplo, CO1.PCCNTR.7202812: $56.000.000 y $81.666.667). Por eso la veeduría descarga las filas, las agrupa por `origen + numero_del_contrato`, usa el mayor valor y muestra la diferencia como indicio. Los valores menores de $10.000 (por ejemplo, $1) se omiten al comparar.
+14. Los NIT de las entidades aparecen como `891855017`, `844004799-6` o `8440041972` (con el dígito pegado). La veeduría filtra con `= n OR like 'n-_' OR like 'n_'`. La última variante solo se usa para NIT de entidades de 9 dígitos, nunca para cédulas.
+15. Las búsquedas por nombre con `$q` (texto libre) más `$group` tardan ~2 s. Con `upper(...) like '%…%'` tardan 12–22 s.
+16. Los topes del PAA (`b6m4-qgqv.presupuesto_minima_cuantia` / `presupuesto_menor_cuantia`) se unen por `codigo_entidad` = `rpmr-utcd.codigo_entidad_en_secop` y `anno`. Hay valores mal diligenciados (por ejemplo, menor cuantía de $1.000), así que el tope es editable.
+
 ### rpmr-utcd · SECOP Integrado
 nivel_entidad, codigo_entidad_en_secop, nombre_de_la_entidad, nit_de_la_entidad (text), departamento_entidad, municipio_entidad, estado_del_proceso, modalidad_de_contrataci_n, objeto_a_contratar, objeto_del_proceso, tipo_de_contrato, fecha_de_firma_del_contrato, fecha_inicio_ejecuci_n, fecha_fin_ejecuci_n, numero_del_contrato (CO1.PCCNTR… en SECOP II; constancia en SECOP I), numero_de_proceso (referencia), valor_contrato, nom_raz_social_contratista, url_contrato (text), origen (`SECOPI` / `SECOPII`), tipo_documento_proveedor, documento_proveedor
 

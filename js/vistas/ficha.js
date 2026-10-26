@@ -8,6 +8,7 @@ import {
   checklist, activarChecklist, resumenAlertas, tablaFacturas, tablaModificaciones, tablaEjecucion, detalleAdiciones,
 } from './analisis.js';
 import { evaluarAdiciones } from '../reglas.js';
+import { documentoBase } from './veeduria.js';
 
 const AVISO_LEGAL = `<p class="aviso-legal">Herramienta de apoyo a la revisión. No reemplaza el análisis del expediente completo en SECOP.
   Los datos provienen de datos.gov.co tal como los publica Colombia Compra Eficiente; cuando un campo no viene, se indica "${NR}".
@@ -70,6 +71,12 @@ function encabezado({ etiqueta, titulo, entidad, proveedor, url, extra = '' }) {
     </div>
     <p class="solo-imprimir">Ficha generada el ${esc(fmtFechaHora(new Date()))} con Revisor SECOP. Las fuentes y las horas de consulta están al final del documento.</p>
   </header>`;
+}
+
+function enlacesVeeduria(nitEntidad, docProveedor) {
+  const ent = documentoBase(nitEntidad).slice(0, 9), prov = documentoBase(docProveedor);
+  const l = [ent && `<a href="#/entidad/${ent}">Veeduría de la entidad</a>`, prov && `<a href="#/proveedor/${prov}">Veeduría del proveedor</a>`].filter(Boolean);
+  return l.length ? `<p class="no-imprimir">${l.join(' · ')}</p>` : '';
 }
 
 function seccionFuentes(consultas) {
@@ -282,7 +289,7 @@ export async function vistaContrato(raiz, id) {
   ];
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Contrato · SECOP II', titulo: c.objeto, entidad: c.entidad, proveedor: c.proveedor, url: c.url })}
+    ${encabezado({ etiqueta: 'Contrato · SECOP II', titulo: c.objeto, entidad: c.entidad, proveedor: c.proveedor, url: c.url, extra: enlacesVeeduria(c.nitEntidad, c.docProveedor) })}
     ${deIntegrado ? `<div class="aviso">La API del conjunto <em>SECOP II – Contratos Electrónicos</em> (jbjy-vk9h) no devolvió este contrato. Hoy solo expone una parte de los registros. Los datos básicos vienen de <em>SECOP Integrado</em> (rpmr-utcd), que no publica supervisor, pagos ni días adicionados: esos campos aparecen como "${NR}".</div>` : ''}
     ${seccion('alertas', 'Resumen de alertas', `<div id="resumen-alertas">${resumenAlertas(autoItems)}</div>`)}
     ${seccion('datos', 'Datos clave del contrato', datosClave, fuenteChip(base))}
@@ -389,7 +396,7 @@ export async function vistaProceso(raiz, id) {
   const lotes = base.filas.length > 1 && !/BDOS/i.test(id) ? `<p class="aviso">SECOP devuelve ${base.filas.length} registros para este identificador (por ejemplo, por lotes). Se muestra ${p.adjudicado === 'Si' ? 'el adjudicado' : 'el primero'}.</p>` : '';
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Proceso · SECOP II', titulo: p.nombre_del_procedimiento, entidad: p.entidad, url })}
+    ${encabezado({ etiqueta: 'Proceso · SECOP II', titulo: p.nombre_del_procedimiento, entidad: p.entidad, url, extra: enlacesVeeduria(p.nit_entidad, p.nit_del_proveedor_adjudicado) })}
     ${lotes}
     ${seccion('alertas', 'Resumen de alertas', resumenAlertas([{ id: 'plazoOfertas', ...pre.plazoOfertas }, { id: 'proponenteUnico', ...pre.proponenteUnico }]))}
     ${seccion('datos', 'Datos clave del proceso', `<dl class="grilla-datos">
@@ -457,7 +464,7 @@ export async function vistaSecop1(raiz, id) {
   });
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Contrato · SECOP I', titulo: r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad, proveedor: r.nom_razon_social_contratista, url })}
+    ${encabezado({ etiqueta: 'Contrato · SECOP I', titulo: r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad, proveedor: r.nom_razon_social_contratista, url, extra: enlacesVeeduria(r.nit_de_la_entidad, r.identificacion_del_contratista) })}
     ${seccion('alertas', 'Resumen de alertas', '<div id="resumen-alertas"></div>')}
     ${seccion('datos', 'Datos clave del contrato', `<dl class="grilla-datos">
       ${campo('Constancia', r.numero_de_constancia)}${campo('Número de proceso', r.numero_de_proceso)}${campo('Número de contrato', r.numero_de_contrato)}

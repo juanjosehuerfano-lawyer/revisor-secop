@@ -34,6 +34,22 @@ export const REGLAS = [
     umbral: 'Aviso si la misma entidad firmó 3 o más contratos por contratación directa con el mismo proveedor en los 12 meses anteriores a la firma del contrato revisado (incluido este).',
     limites: 'En prestación de servicios profesionales y de apoyo a la gestión es frecuente y puede ser legal. El aviso pide revisar el objeto y la justificación de cada contrato.',
   },
+  {
+    id: 'fraccionamiento',
+    titulo: 'Posible fraccionamiento de contratos',
+    norma: 'Ley 80 de 1993, arts. 24, 25 (num. 7 y 12) y 29; Ley 1150 de 2007, arts. 2 y 5 (principios de planeación, transparencia y selección objetiva); jurisprudencia del Consejo de Estado sobre fraccionamiento (verificar sentencias aplicables)',
+    texto: 'Dividir una misma necesidad en varios contratos pequeños para quedar por debajo de un tope de cuantía y usar una modalidad más simple desconoce la planeación y la selección objetiva.',
+    umbral: 'Aviso si el mismo proveedor tiene 2 o más contratos firmados dentro de 30 días, cada uno por debajo del tope elegido (por defecto, la mínima cuantía del Plan Anual de Adquisiciones de la entidad), y su suma supera ese tope.',
+    limites: 'Es un indicio, no una prueba. Hay que comparar los objetos: si son necesidades distintas, no hay fraccionamiento. El tope del PAA puede estar mal diligenciado en SECOP; verifícalo y ajústalo.',
+  },
+  {
+    id: 'directaEntidad',
+    titulo: 'Proveedores con contratación directa repetida',
+    norma: 'Ley 1150 de 2007, art. 2, num. 4; Decreto 1082 de 2015, art. 2.2.1.2.1.4.1',
+    texto: 'Misma regla de contratación directa repetida, aplicada a cada proveedor de la entidad: se busca la ventana de 12 meses con más contratos directos.',
+    umbral: 'Aviso si un proveedor tiene 3 o más contratos directos con la entidad en alguna ventana de 12 meses.',
+    limites: 'Es habitual en prestación de servicios profesionales y de apoyo a la gestión. Revisa el objeto y la causal de cada contrato.',
+  },
 ];
 
 export const ETAPAS = [
