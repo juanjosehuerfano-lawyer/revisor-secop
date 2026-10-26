@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pruebas de reglas</title>
+  <style>
+    :root { --ok: #1d6b3a; --mal: #b42318; --texto: #1c2126; --fondo: #f6f5f1; }
+    @media (prefers-color-scheme: dark) { :root { --ok: #7fd19c; --mal: #ff8a7a; --texto: #e6e9eb; --fondo: #121619; } }
+    body { font: 15px/1.5 system-ui, sans-serif; max-width: 860px; margin: 0 auto; padding: 16px; color: var(--texto); background: var(--fondo); }
+    li { margin: 4px 0; } .ok { color: var(--ok); } .mal { color: var(--mal); } code { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Pruebas de reglas de alerta</h1>
+  <p id="resumen">Corriendo…</p>
+  <ul id="lista"></ul>
+  <script type="module">
+    import { CASOS } from './casos.js';
+    const lista = document.getElementById('lista');
+    let fallas = 0;
+    for (const [nombre, prueba] of CASOS) {
+      const li = document.createElement('li');
+      try { prueba(); li.className = 'ok'; li.textContent = '✓ ' + nombre; }
+      catch (e) { fallas++; li.className = 'mal'; li.innerHTML = '✗ ' + nombre + '<br><code></code>'; li.querySelector('code').textContent = e.message; }
+      lista.append(li);
+    }
+    const r = document.getElementById('resumen');
+    r.textContent = `${CASOS.length - fallas} de ${CASOS.length} pruebas pasaron.`;
+    r.className = fallas ? 'mal' : 'ok';
+    document.body.dataset.resultado = fallas ? 'falla' : 'ok';
+  </script>
+</body>
+</html>

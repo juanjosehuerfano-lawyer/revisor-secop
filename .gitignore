@@ -1,0 +1,4 @@
+# Muestras crudas de la API: incluyen datos personales de terceros (correo, teléfono de proveedores).
+docs/muestras/
+# Configuración local del entorno de desarrollo.
+.claude/

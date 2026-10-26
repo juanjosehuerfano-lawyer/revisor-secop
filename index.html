@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Revisor SECOP</title>
+  <meta name="description" content="Revisión de procesos y contratos públicos de Colombia con datos abiertos del SECOP.">
+  <meta name="theme-color" content="#0f4c5c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icono-180.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <a class="saltar" href="#vista">Ir al contenido</a>
+  <header class="barra">
+    <a class="marca" href="#/buscar"><img src="icons/icono.svg" alt="" width="28" height="28"><span>Revisor SECOP</span></a>
+    <nav class="pestanas" aria-label="Secciones">
+      <a data-tab="buscar" href="#/buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar</span></a>
+      <a data-tab="ayudas" href="#/ayudas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg><span>Ayudas</span></a>
+      <a data-tab="reglas" href="#/reglas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/></svg><span>Reglas</span></a>
+      <a data-tab="ajustes" href="#/ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Ajustes</span></a>
+    </nav>
+  </header>
+  <main id="vista" tabindex="-1"></main>
+  <footer class="pie">Datos: <a href="https://www.datos.gov.co" target="_blank" rel="noopener">datos.gov.co</a> (Colombia Compra Eficiente). Apoyo de revisión: no reemplaza el análisis del expediente en SECOP.</footer>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
