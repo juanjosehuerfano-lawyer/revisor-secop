@@ -2,11 +2,11 @@
 
 import { consultar, consultarSeguro, lit, whereAviso } from '../api.js';
 import { esc, valor, fmtCOP, fmtFecha, fmtFechaHora, fmtNum, fechaISO, urlDe, campo, fuenteChip, num, NR } from '../util.js';
-import { cargando, errorHtml, seccion, tabla } from './comun.js';
+import { cargando, errorHtml, seccion, tabla, banda, tablero, ruta, estacion, activarRuta } from './comun.js';
 import {
   lineaDeTiempo, editorAdiciones, activarEditorAdiciones, evaluarPrecontractual,
   checklist, activarChecklist, resumenAlertas, tablaFacturas, tablaModificaciones, tablaEjecucion, detalleAdiciones,
-  evaluarEjecucion, alertasHtml,
+  evaluarEjecucion, alertasHtml, estacionLiquidacion,
 } from './analisis.js';
 import { botonSeguir, activarSeguir } from './casos.js';
 import { evaluarAdiciones } from '../reglas.js';
@@ -60,26 +60,26 @@ function historialParaRegla(h) {
   return h && !h.error ? h.filas.map(r => ({ fecha: String(r.fecha_de_firma_del_contrato || '').slice(0, 10), modalidad: r.modalidad_de_contrataci_n })) : undefined;
 }
 
-function encabezado({ etiqueta, titulo, entidad, proveedor, url, extra = '', ruta }) {
-  return `<header class="ficha-encabezado tarjeta">
-    <p class="migas"><a href="#/buscar">← Volver a buscar</a></p>
-    <p class="etiqueta">${esc(etiqueta)}</p>
-    <h2>${esc(valor(titulo))}</h2>
-    <p class="res-entidad">${esc(valor(entidad))}${proveedor !== undefined ? ` · Proveedor: <strong>${esc(valor(proveedor))}</strong>` : ''}</p>
-    ${extra}
-    <div class="acciones no-imprimir">
-      ${url ? `<a class="boton" href="${esc(url)}" target="_blank" rel="noopener">Ver en SECOP</a>` : `<span class="nr">Enlace al SECOP: ${NR}</span>`}
+// Franja del título con los datos de identificación, las acciones y la ruta; debajo, el tablero de cifras.
+function encabezado({ etiqueta, numero, titulo, entidad, proveedor, url, extra = '', hash, estaciones, nombreRuta, celdas }) {
+  const meta = [esc(etiqueta), numero && `<code>${esc(numero)}</code>`, esc(valor(entidad)),
+    proveedor !== undefined && `Proveedor: ${esc(valor(proveedor))}`].filter(Boolean).join(' · ');
+  return banda({
+    titulo: esc(valor(titulo)),
+    meta: meta + extra,
+    acciones: `${url ? `<a class="boton" href="${esc(url)}" target="_blank" rel="noopener">Ver en SECOP</a>` : ''}
       <button type="button" class="secundario" data-accion="imprimir">Exportar a PDF</button>
-      ${botonSeguir({ ruta, tipo: etiqueta, titulo: valor(titulo).slice(0, 200), detalle: [entidad, proveedor].filter(Boolean).join(' · ') })}
-    </div>
-    <p class="solo-imprimir">Ficha generada el ${esc(fmtFechaHora(new Date()))} con Revisor SECOP. Las fuentes y las horas de consulta están al final del documento.</p>
-  </header>`;
+      ${botonSeguir({ ruta: hash, tipo: etiqueta, titulo: valor(titulo).slice(0, 200), detalle: [entidad, proveedor].filter(Boolean).join(' · ') })}`,
+    extra: ruta(estaciones, nombreRuta),
+  }) + tablero(celdas)
+    + (url ? '' : `<p class="nr">Enlace al SECOP: ${NR}</p>`)
+    + `<p class="solo-imprimir">Ficha generada el ${esc(fmtFechaHora(new Date()))} con Revisor SECOP. Las fuentes y las horas de consulta están al final del documento.</p>`;
 }
 
 function enlacesVeeduria(nitEntidad, docProveedor) {
   const ent = documentoBase(nitEntidad).slice(0, 9), prov = documentoBase(docProveedor);
   const l = [ent && `<a href="#/entidad/${ent}">Veeduría de la entidad</a>`, prov && `<a href="#/proveedor/${prov}">Veeduría del proveedor</a>`].filter(Boolean);
-  return l.length ? `<p class="no-imprimir">${l.join(' · ')}</p>` : '';
+  return l.length ? `<br><span class="no-imprimir">${l.join(' · ')}</span>` : '';
 }
 
 function seccionFuentes(consultas) {
@@ -91,6 +91,7 @@ function seccionFuentes(consultas) {
 
 function activarComunes(raiz) {
   activarSeguir(raiz);
+  activarRuta(raiz);
   raiz.querySelectorAll('[data-accion=imprimir]').forEach(b => b.addEventListener('click', () => {
     raiz.querySelectorAll('details').forEach(d => { d.dataset.abierto = d.open; d.open = true; });
     window.print();
@@ -246,6 +247,7 @@ export async function vistaContrato(raiz, id) {
   });
 
   const datosClave = `<dl class="grilla-datos">
+    <div class="campo ancho"><dt>Objeto</dt><dd>${esc(valor(c.objeto))}</dd></div>
     ${campo('ID del contrato', c.id)}${campo('Referencia del contrato', c.referencia)}
     ${deIntegrado ? campo('Número de proceso (SECOP Integrado)', c.referenciaProceso) : campo('Proceso de compra', c.procesoCompra)}
     ${campo('Proceso de selección', p?.id_del_proceso)}${campo('Referencia del proceso', p?.referencia_del_proceso)}
@@ -300,8 +302,28 @@ export async function vistaContrato(raiz, id) {
     pre.directaRepetida && { id: 'directaRepetida', ...pre.directaRepetida }, ...ejecucion,
   ];
 
+  // Ruta del contrato: las estaciones toman el nivel de la alerta que les corresponde.
+  const nivelDe = regla => autoItems.find(x => x && x.id === regla)?.r.nivel;
+  const estadoCierre = nivelDe('plazoOfertas') === 'alta' ? 'alta' : nivelDe('proponenteUnico') === 'media' ? 'media' : null;
+  const liq = estacionLiquidacion(ejecucion.find(x => x.id === 'liquidacion').r);
+  const estaciones = [
+    p && estacion('Publicación', fechasProc.publicacion, { etapa: 'Precontractual', tramo: 'pre', ir: 'precontractual' }),
+    p && estacion('Cierre de ofertas', fechasProc.cierre, { tramo: 'pre', ir: 'precontractual', ...(estadoCierre && { estado: estadoCierre }) }),
+    estacion('Firma', c.fechaFirma, { etapa: 'Ejecución', tramo: 'eje', ir: 'datos' }),
+    estacion('Inicio', c.fechaInicio, { tramo: 'eje', ir: 'ejecucion', ...(nivelDe('inicioAntesFirma') === 'media' && { estado: 'media' }) }),
+    adic.filas.length && { titulo: `${adic.filas.length} modificación(es)`, detalle: `Última: ${fmtFecha(adic.filas.at(-1).fecharegistro)}`, tramo: 'eje', estado: 'menor', ir: 'ejecucion' },
+    estacion('Fin del plazo', c.fechaFin, { tramo: liq.tramo, ir: 'ejecucion' }),
+    liq.estacion,
+  ].filter(Boolean);
+  const celdas = [
+    { etiqueta: 'Valor del contrato', valor: fmtCOP(c.valor) },
+    { etiqueta: 'Pagado', valor: fmtCOP(c.valorPagado), nota: num(c.valor) > 0 && num(c.valorPagado) !== null ? fmtNum((num(c.valorPagado) / num(c.valor)) * 100, ' %') : '' },
+    { etiqueta: 'Plazo', valor: valor(c.duracion) },
+    { etiqueta: 'Estado en SECOP', valor: valor(c.estado) },
+  ];
+
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Contrato · SECOP II', titulo: c.objeto, entidad: c.entidad, proveedor: c.proveedor, url: c.url, extra: enlacesVeeduria(c.nitEntidad, c.docProveedor), ruta: `#/contrato/${encodeURIComponent(c.id)}` })}
+    ${encabezado({ etiqueta: 'Contrato · SECOP II', titulo: c.objeto, entidad: c.entidad, proveedor: c.proveedor, url: c.url, extra: enlacesVeeduria(c.nitEntidad, c.docProveedor), hash: `#/contrato/${encodeURIComponent(c.id)}`, numero: c.id, estaciones, nombreRuta: 'Ruta del contrato', celdas })}
     ${deIntegrado ? `<div class="aviso">El conjunto <em>SECOP II – Contratos Electrónicos</em> (jbjy-vk9h) no devolvió este contrato. Los datos básicos vienen de <em>SECOP Integrado</em> (rpmr-utcd), que no publica supervisor, pagos, liquidación ni días adicionados: esos campos aparecen como "${NR}" y sus alertas quedan sin datos.</div>` : ''}
     ${seccion('alertas', 'Resumen de alertas', `<div id="resumen-alertas">${resumenAlertas(autoItems)}</div>`)}
     ${seccion('datos', 'Datos clave del contrato', datosClave, fuenteChip(base))}
@@ -406,10 +428,27 @@ export async function vistaProceso(raiz, id) {
     campoOferentes: `${usarUnicos ? 'proveedores únicos con respuestas' : 'respuestas al procedimiento'}, fase "${valor(principal.fase)}"`,
   });
   const url = urlDe(p.urlproceso);
+  const estadoCierre = pre.plazoOfertas.r.nivel === 'alta' ? 'alta' : pre.proponenteUnico.r.nivel === 'media' ? 'media' : null;
+  const primerContrato = [...contratos.values()].filter(x => fechaISO(x.firma)).sort((a, b) => String(a.firma).localeCompare(String(b.firma)))[0];
+  const estaciones = [
+    estacion('Publicación', fechasProc.publicacion, { etapa: 'Selección', tramo: 'pre', ir: 'datos' }),
+    estacion('Cierre de ofertas', fechasProc.cierre, { tramo: 'pre', ir: 'alertas', ...(estadoCierre && { estado: estadoCierre }) }),
+    estacion('Apertura de ofertas', principal.fecha_de_apertura_efectiva, { tramo: 'pre', ir: 'tiempo' }),
+    estacion('Adjudicación', principal.fecha_adjudicacion, { tramo: 'eje', ir: 'datos' }),
+    primerContrato
+      ? estacion('Firma del contrato', primerContrato.firma, { etapa: 'Contrato', ir: 'contratos' })
+      : { etapa: 'Contrato', titulo: 'Contrato', detalle: 'SECOP no reporta contratos derivados', estado: 'pend', ir: 'contratos' },
+  ];
+  const celdas = [
+    { etiqueta: 'Precio base', valor: fmtCOP(p.precio_base) },
+    { etiqueta: 'Valor adjudicado', valor: fmtCOP(p.valor_total_adjudicacion) },
+    { etiqueta: 'Oferentes', valor: valor(usarUnicos ? oferentesUnicos : principal.respuestas_al_procedimiento) },
+    { etiqueta: 'Estado en SECOP', valor: valor(p.estado_del_procedimiento) },
+  ];
   const lotes = base.filas.length > 1 && !/BDOS/i.test(id) ? `<p class="aviso">SECOP devuelve ${base.filas.length} registros para este identificador (por ejemplo, por lotes). Se muestra ${p.adjudicado === 'Si' ? 'el adjudicado' : 'el primero'}.</p>` : '';
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Proceso · SECOP II', titulo: p.nombre_del_procedimiento, entidad: p.entidad, url, extra: enlacesVeeduria(p.nit_entidad, p.nit_del_proveedor_adjudicado), ruta: `#/proceso/${encodeURIComponent(p.id_del_proceso)}` })}
+    ${encabezado({ etiqueta: 'Proceso · SECOP II', titulo: p.nombre_del_procedimiento, entidad: p.entidad, url, extra: enlacesVeeduria(p.nit_entidad, p.nit_del_proveedor_adjudicado), hash: `#/proceso/${encodeURIComponent(p.id_del_proceso)}`, numero: p.id_del_proceso, estaciones, nombreRuta: 'Ruta del proceso', celdas })}
     ${lotes}
     ${seccion('alertas', 'Resumen de alertas', resumenAlertas([{ id: 'plazoOfertas', ...pre.plazoOfertas }, { id: 'proponenteUnico', ...pre.proponenteUnico }]))}
     ${seccion('datos', 'Datos clave del proceso', `<dl class="grilla-datos">
@@ -455,7 +494,7 @@ export async function vistaSecop1(raiz, id) {
     return;
   }
   if (base.filas.length > 1 && new Set(base.filas.map(f => f.uid)).size > 1) {
-    raiz.innerHTML = `<div class="tarjeta"><p class="migas"><a href="#/buscar">← Volver a buscar</a></p><h2>La constancia ${esc(id)} tiene ${base.filas.length} registros</h2>
+    raiz.innerHTML = `<div class="tarjeta"><h2>La constancia ${esc(id)} tiene ${base.filas.length} registros</h2>
       <p>Elige el contrato que quieres revisar:</p>${tabla(['Registro', 'Contrato', 'Contratista', 'Cuantía', 'Rubro'],
       base.filas.map(f => [`<a href="#/secop1/${encodeURIComponent(f.uid)}"><code>${esc(f.uid)}</code></a>`, esc(valor(f.numero_de_contrato)),
         esc(valor(f.nom_razon_social_contratista)), fmtCOP(f.cuantia_contrato), esc(valor(f.nombre_rubro))]))}${fuenteChip(base)}</div>`;
@@ -472,6 +511,20 @@ export async function vistaSecop1(raiz, id) {
     fechaFirma: r.fecha_de_firma_del_contrato, fechaInicio: r.fecha_ini_ejec_contrato, fechaFin: r.fecha_fin_ejec_contrato,
     estado: r.estado_del_proceso, fechaLiquidacion: r.fecha_liquidacion,
   }, { omitir: ['prorrogas', 'pagosExceso'] });
+  const liq = estacionLiquidacion(ejecucion.find(x => x.id === 'liquidacion').r, r.fecha_liquidacion);
+  const estaciones = [
+    estacion('Cargue en SECOP I', r.fecha_de_cargue_en_el_secop, { etapa: 'Precontractual', tramo: 'pre', ir: 'datos' }),
+    estacion('Firma', r.fecha_de_firma_del_contrato, { etapa: 'Ejecución', tramo: 'eje', ir: 'datos' }),
+    estacion('Inicio', r.fecha_ini_ejec_contrato, { tramo: 'eje', ir: 'ejecucion', ...(ejecucion.find(x => x.id === 'inicioAntesFirma').r.nivel === 'media' && { estado: 'media' }) }),
+    estacion('Fin del plazo', r.fecha_fin_ejec_contrato, { tramo: liq.tramo, ir: 'ejecucion' }),
+    liq.estacion,
+  ];
+  const celdas = [
+    { etiqueta: 'Cuantía del contrato', valor: fmtCOP(r.cuantia_contrato) },
+    { etiqueta: 'Valor con adiciones', valor: fmtCOP(r.valor_contrato_con_adiciones) },
+    { etiqueta: 'Plazo', valor: valor(r.plazo_de_ejec_del_contrato ? `${r.plazo_de_ejec_del_contrato} ${r.rango_de_ejec_del_contrato || ''}`.trim() : undefined) },
+    { etiqueta: 'Estado en SECOP', valor: valor(r.estado_del_proceso) },
+  ];
   const totalAdic = num(r.valor_total_de_adiciones);
   const editor = editorAdiciones({
     clave: `adiciones:${r.uid}`, fechaInicial: r.fecha_de_firma_del_contrato,
@@ -482,9 +535,10 @@ export async function vistaSecop1(raiz, id) {
   });
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Contrato · SECOP I', titulo: r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad, proveedor: r.nom_razon_social_contratista, url, extra: enlacesVeeduria(r.nit_de_la_entidad, r.identificacion_del_contratista), ruta: `#/secop1/${encodeURIComponent(r.uid)}` })}
+    ${encabezado({ etiqueta: 'Contrato · SECOP I', titulo: r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad, proveedor: r.nom_razon_social_contratista, url, extra: enlacesVeeduria(r.nit_de_la_entidad, r.identificacion_del_contratista), hash: `#/secop1/${encodeURIComponent(r.uid)}`, numero: r.numero_de_constancia, estaciones, nombreRuta: 'Ruta del contrato', celdas })}
     ${seccion('alertas', 'Resumen de alertas', '<div id="resumen-alertas"></div>')}
     ${seccion('datos', 'Datos clave del contrato', `<dl class="grilla-datos">
+      <div class="campo ancho"><dt>Objeto</dt><dd>${esc(valor(r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar))}</dd></div>
       ${campo('Constancia', r.numero_de_constancia)}${campo('Número de proceso', r.numero_de_proceso)}${campo('Número de contrato', r.numero_de_contrato)}
       ${campo('Entidad', r.nombre_entidad)}${campo('NIT de la entidad', r.nit_de_la_entidad)}${campo('Orden / nivel', [r.orden_entidad, r.nivel_entidad].filter(Boolean).join(' · ') || undefined)}
       ${campo('Régimen de contratación', r.nombre_regimen_de_contratacion)}${campo('Modalidad', r.modalidad_de_contratacion)}${campo('Causal (otras formas)', r.causal_de_otras_formas_de)}

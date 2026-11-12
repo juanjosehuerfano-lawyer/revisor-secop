@@ -3,8 +3,8 @@
 // (y a veces con valores distintos); sumar con $group en la API inflaría los resultados.
 
 import { consultar, consultarSeguro, lit } from '../api.js';
-import { esc, valor, fmtCOP, fmtNum, fmtFecha, fmtFechaHora, fechaISO, num, campo, fuenteChip, almacen, aCsv, descargar, NR } from '../util.js';
-import { cargando, errorHtml, seccion, tabla, alertaHtml } from './comun.js';
+import { esc, valor, fmtCOP, fmtNum, fmtMillones, fmtFecha, fmtFechaHora, fechaISO, num, campo, fuenteChip, almacen, aCsv, descargar, NR } from '../util.js';
+import { cargando, errorHtml, seccion, tabla, alertaHtml, banda, tablero, ruta } from './comun.js';
 import { claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento, evaluarInicioAntesDeFirma } from '../reglas.js';
 import { botonSeguir, activarSeguir } from './casos.js';
 
@@ -91,16 +91,20 @@ function agrupar(lista, clave) {
 }
 const suma = lista => lista.reduce((s, c) => s + (c.valor || 0), 0);
 
-function formularioPeriodo(base, p, caso, hayContratos) {
+// Acciones de la franja de una veeduría.
+function accionesVeeduria(base, caso, hayContratos) {
+  return `<button type="button" data-accion="imprimir">Exportar a PDF</button>
+    ${hayContratos ? '<button type="button" class="secundario" data-accion="csv">Descargar contratos (Excel)</button>' : ''}
+    ${botonSeguir({ ...caso, ruta: base })}`;
+}
+
+function formularioPeriodo(base, p) {
   return `<form class="periodo no-imprimir" data-base="${esc(base)}">
     <div class="grilla-form">
       <label>Desde<input type="date" name="desde" value="${esc(p.desde)}"></label>
       <label>Hasta<input type="date" name="hasta" value="${esc(p.hasta)}"></label>
     </div>
-    <div class="acciones"><button type="submit">Actualizar</button>
-      <button type="button" class="secundario" data-accion="imprimir">Exportar a PDF</button>
-      ${hayContratos ? '<button type="button" class="secundario" data-accion="csv">Descargar contratos (Excel)</button>' : ''}
-      ${botonSeguir({ ...caso, ruta: base })}</div>
+    <div class="acciones"><button type="submit">Actualizar el periodo</button></div>
     <p class="ayuda-campo">El periodo usa la fecha de firma. Periodos largos en entidades grandes pueden tardar: la app descarga cada contrato para quitar duplicados.
       El archivo de Excel (CSV) trae todos los contratos del periodo sin duplicados; las celdas vacías son datos no reportados en SECOP.</p>
   </form>`;
@@ -130,28 +134,36 @@ function activar(raiz, datos, nombreArchivo) {
   raiz.querySelectorAll('[data-accion=imprimir]').forEach(b => b.addEventListener('click', () => window.print()));
 }
 
-// Barras horizontales simples, sin librerías. filas: [{ etiqueta, valor, texto }]
-function barras(filas) {
-  const max = Math.max(...filas.map(f => f.valor), 1);
-  return `<div class="barras">${filas.map(f => `<div class="barra-fila"><span class="barra-etq">${esc(f.etiqueta)}</span>
-    <span class="barra-pista"><span class="barra-relleno" style="width:${Math.max(1, (f.valor / max) * 100).toFixed(1)}%"></span></span>
-    <span class="barra-val">${esc(f.texto)}</span></div>`).join('')}</div>`;
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+// Ruta del periodo: una estación por mes (hasta 12) o por año, con sus contratos y su valor. La de mayor valor va resaltada.
+function rutaPeriodo(contratos) {
+  const conFecha = contratos.filter(c => c.fecha);
+  const porMes = agrupar(conFecha, c => c.fecha.slice(0, 7));
+  const grupos = [...(porMes.size <= 12 ? porMes : agrupar(conFecha, c => c.fecha.slice(0, 4)))].sort((a, b) => a[0].localeCompare(b[0]));
+  if (grupos.length < 2) return '';
+  const mayor = Math.max(...grupos.map(([, l]) => suma(l)));
+  return ruta(grupos.map(([k, l]) => ({
+    titulo: k.length === 7 ? `${MESES[Number(k.slice(5)) - 1]} ${k.slice(0, 4)}` : k,
+    detalle: [`${fmtNum(l.length)} contrato${l.length === 1 ? '' : 's'}`, fmtMillones(suma(l)), suma(l) === mayor && 'mayor valor'].filter(Boolean).join(String.fromCharCode(10)),
+    tramo: 'eje', estado: suma(l) === mayor ? 'pico' : '',
+  })), 'Contratos firmados en el periodo');
 }
 
+// Tablero de la veeduría, con la nota sobre las filas repetidas de SECOP Integrado.
 function resumen(contratos, totalFilas, contraparte = { etiqueta: 'Proveedores distintos', clave: c => c.proveedor }) {
   const total = suma(contratos);
   const directas = contratos.filter(c => c.clase === 'directa');
   const contrapartes = new Set(contratos.map(contraparte.clave).filter(Boolean));
   const distintos = contratos.filter(c => c.filas > 1 && c.valorMin !== null && c.valor !== c.valorMin);
-  return `<dl class="grilla-datos kpis">
-    ${campo('Contratos únicos', contratos.length, v => fmtNum(v))}
-    ${campo('Valor total', total, fmtCOP)}
-    ${campo('Contratación directa (número)', `${fmtNum(directas.length)} · ${fmtNum(pct(directas.length, contratos.length))} %`)}
-    ${campo('Contratación directa (valor)', `${fmtCOP(suma(directas))} · ${fmtNum(pct(suma(directas), total))} %`)}
-    ${campo(contraparte.etiqueta, contrapartes.size, v => fmtNum(v))}
-    ${campo('Contratos de SECOP I / SECOP II', `${contratos.filter(c => c.origen === 'SECOPI').length} / ${contratos.filter(c => c.origen === 'SECOPII').length}`)}
-  </dl>
-  <p class="ayuda-campo">SECOP Integrado devolvió ${fmtNum(totalFilas)} filas para ${fmtNum(contratos.length)} contratos: se quitaron las repetidas.
+  return tablero([
+    { etiqueta: 'Contratos únicos', valor: fmtNum(contratos.length) },
+    { etiqueta: 'Valor total', valor: fmtCOP(total) },
+    { etiqueta: 'Directa por número', valor: fmtNum(directas.length), nota: fmtNum(pct(directas.length, contratos.length), ' %') },
+    { etiqueta: 'Directa por valor', valor: fmtCOP(suma(directas)), nota: fmtNum(pct(suma(directas), total), ' %') },
+    { etiqueta: contraparte.etiqueta, valor: fmtNum(contrapartes.size) },
+    { etiqueta: 'SECOP I / SECOP II', valor: `${contratos.filter(c => c.origen === 'SECOPI').length} / ${contratos.filter(c => c.origen === 'SECOPII').length}` },
+  ]) + `<p class="ayuda-campo">SECOP Integrado devolvió ${fmtNum(totalFilas)} filas para ${fmtNum(contratos.length)} contratos: se quitaron las repetidas.
     En ${fmtNum(distintos.length)} contratos las filas traen valores distintos; para los totales se usa el mayor valor reportado.</p>`;
 }
 
@@ -161,12 +173,6 @@ function porModalidad(contratos) {
   return tabla(['Modalidad', 'Contratos', '% contratos', 'Valor', '% valor'],
     g.map(x => [esc(ETIQUETA_CLASE[x.k] || x.k), fmtNum(x.n), fmtNum(pct(x.n, contratos.length), ' %'), fmtCOP(x.v), fmtNum(pct(x.v, total), ' %')]))
     + `<p class="norma">La licitación pública es la regla general; las demás modalidades proceden solo en los casos que fija la ley (Ley 1150 de 2007, art. 2). Una proporción alta de contratación directa no es ilegal por sí misma, pero orienta la revisión.</p>`;
-}
-
-function porMes(contratos) {
-  const g = [...agrupar(contratos.filter(c => c.fecha), c => c.fecha.slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0]));
-  if (!g.length) return `<p class="nr">${NR}</p>`;
-  return barras(g.map(([mes, l]) => ({ etiqueta: mes, valor: suma(l), texto: `${l.length} · ${fmtCOP(suma(l))}` })));
 }
 
 function concentracion(contratos, { titulo = 'Proveedor', clave = c => c.proveedor, nombre = c => c.nombreProveedor, enlace } = {}) {
@@ -320,16 +326,18 @@ export async function vistaEntidad(raiz, nit, params) {
   const enlaceProv = doc => `<a href="#/proveedor/${encodeURIComponent(doc)}?desde=${p.desde}&hasta=${p.hasta}"><code>${esc(doc)}</code></a>`;
 
   raiz.innerHTML = `
-    <header class="tarjeta ficha-encabezado"><p class="migas"><a href="#/veeduria">← Veeduría</a></p>
-      <p class="etiqueta">Veeduría · Entidad</p><h2>${esc(nombre)}</h2>
-      <p class="res-entidad">NIT ${esc(nit)} · Periodo: ${fmtFecha(p.desde)} a ${fmtFecha(p.hasta)}</p>
-      ${formularioPeriodo(base, p, { tipo: 'Veeduría · Entidad', titulo: nombre, detalle: `NIT ${nit}` }, contratos.length > 0)}
+    ${banda({
+      titulo: esc(nombre),
+      meta: `Veeduría de la entidad · NIT ${esc(nit)} · Periodo: ${fmtFecha(p.desde)} a ${fmtFecha(p.hasta)} · En la ruta, M son millones de pesos`,
+      acciones: accionesVeeduria(base, { tipo: 'Veeduría · Entidad', titulo: nombre, detalle: `NIT ${nit}` }, contratos.length > 0),
+      extra: rutaPeriodo(contratos),
+    })}
+    ${contratos.length ? resumen(contratos, datos.totalFilas) : ''}
+    ${formularioPeriodo(base, p)}
       ${datos.truncado ? `<div class="aviso">El periodo tiene más de ${fmtNum(MAX_FILAS)} filas; solo se analizaron las primeras. Acorta el periodo para un análisis completo.</div>` : ''}
-    </header>
     ${contratos.length ? `
-    ${seccion('v-resumen', 'Resumen', resumen(contratos, datos.totalFilas))}
     ${seccion('v-modalidad', 'Contratación por modalidad', porModalidad(contratos))}
-    ${seccion('v-mes', 'Contratos firmados por mes', porMes(contratos))}
+
     ${seccion('v-proveedores', 'Concentración en proveedores', concentracion(contratos, { enlace: enlaceProv }))}
     ${seccion('v-directa', 'Contratación directa repetida', directaRepetida(contratos, c => c.proveedor, c => c.nombreProveedor, enlaceProv))}
     ${seccion('v-fracc', 'Posible fraccionamiento', bloqueFraccionamiento(`fracc:${nit}`, paa.topes), paa.consulta ? fuenteChip(paa.consulta) : '')}
@@ -360,23 +368,26 @@ export async function vistaProveedor(raiz, doc, params) {
   const base = `#/proveedor/${encodeURIComponent(doc)}`;
   const nitEnt = c => documentoBase(c.nitEntidad).slice(0, 9) || c.codigoEntidad;
   const enlaceEnt = n => `<a href="#/entidad/${encodeURIComponent(n)}?desde=${p.desde}&hasta=${p.hasta}"><code>${esc(n)}</code></a>`;
-  const porAnio = [...agrupar(contratos.filter(c => c.fecha), c => c.fecha.slice(0, 4))].sort((a, b) => a[0].localeCompare(b[0]));
+
 
   raiz.innerHTML = `
-    <header class="tarjeta ficha-encabezado"><p class="migas"><a href="#/veeduria">← Veeduría</a></p>
-      <p class="etiqueta">Veeduría · Proveedor</p><h2>${esc(nombre)}</h2>
-      <p class="res-entidad">Documento ${esc(doc)} · Periodo: ${fmtFecha(p.desde)} a ${fmtFecha(p.hasta)}</p>
-      ${formularioPeriodo(base, p, { tipo: 'Veeduría · Proveedor', titulo: nombre, detalle: `Documento ${doc}` }, contratos.length > 0)}
-    </header>
+    ${banda({
+      titulo: esc(nombre),
+      meta: `Veeduría del proveedor · Documento ${esc(doc)} · Periodo: ${fmtFecha(p.desde)} a ${fmtFecha(p.hasta)} · En la ruta, M son millones de pesos`,
+      acciones: accionesVeeduria(base, { tipo: 'Veeduría · Proveedor', titulo: nombre, detalle: `Documento ${doc}` }, contratos.length > 0),
+      extra: rutaPeriodo(contratos),
+    })}
+    ${contratos.length ? resumen(contratos, datos.totalFilas, { etiqueta: 'Entidades distintas', clave: nitEnt }) : ''}
+    ${formularioPeriodo(base, p)}
     ${seccion('v-registro', 'Registro en SECOP II', r ? `<dl class="grilla-datos">
       ${campo('Nombre', r.nombre)}${campo('NIT / documento', r.nit)}${campo('Tipo de empresa', r.tipo_empresa)}
       ${campo('Activo', r.esta_activa)}${campo('Registrado desde', r.fecha_creacion, fmtFecha)}${campo('Es PYME', r.espyme)}
       ${campo('Representante legal', r.nombre_representante_legal)}${campo('Ubicación', [r.municipio, r.departamento].filter(Boolean).join(', ') || undefined)}
       ${campo('Actividad principal', r.descripcion_categoria_principal)}</dl>` : `<p class="nr">El documento no aparece en el registro de proveedores de SECOP II.</p>`, fuenteChip(reg))}
     ${contratos.length ? `
-    ${seccion('v-resumen', 'Resumen', resumen(contratos, datos.totalFilas, { etiqueta: 'Entidades distintas', clave: nitEnt }))}
+
     ${seccion('v-modalidad', 'Contratación por modalidad', porModalidad(contratos))}
-    ${seccion('v-anio', 'Contratos por año', barras(porAnio.map(([a, l]) => ({ etiqueta: a, valor: suma(l), texto: `${l.length} · ${fmtCOP(suma(l))}` }))))}
+
     ${seccion('v-entidades', 'Entidades que le contratan', concentracion(contratos, { titulo: 'Entidad', clave: nitEnt, nombre: c => c.entidad, enlace: enlaceEnt }))}
     ${seccion('v-directa', 'Contratación directa repetida por entidad', directaRepetida(contratos, nitEnt, c => c.entidad, enlaceEnt))}
     ${seccion('v-inicio', 'Inicio de ejecución antes de la firma', inicioAntesFirma(contratos))}
@@ -394,8 +405,8 @@ export function vistaVeeduria(raiz, params) {
   const tipo = params.get('tipo') || 'entidad';
   const q = params.get('q') || '';
   raiz.innerHTML = `
-    <section class="tarjeta"><h2>Veeduría</h2>
-      <p>Analiza en su conjunto la contratación de una entidad o de un proveedor: modalidades, concentración, contratación directa repetida, posible fraccionamiento, competencia y contratos con valores distintos.</p>
+    ${banda({ titulo: 'Veeduría', meta: 'Analiza en su conjunto la contratación de una entidad o de un proveedor: modalidades, concentración, contratación directa repetida, posible fraccionamiento, competencia y contratos con valores distintos.' })}
+    <section class="tarjeta">
       <form id="form-veeduria">
         <div class="grilla-form">
           <label>Analizar<select name="tipo"><option value="entidad"${tipo === 'entidad' ? ' selected' : ''}>Una entidad</option><option value="proveedor"${tipo === 'proveedor' ? ' selected' : ''}>Un proveedor</option></select></label>

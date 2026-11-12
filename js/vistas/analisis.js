@@ -53,7 +53,7 @@ function filaAdicion(a = {}) {
   return `<tr><td><input type="date" name="fecha" value="${esc(fechaISO(a.fecha) || '')}"></td>
     <td><input type="number" name="valor" min="0" step="1" value="${esc(a.valor ?? '')}" placeholder="Tomar del documento"></td>
     <td><input type="text" name="descripcion" value="${esc(a.descripcion || '')}"></td>
-    <td><button type="button" class="quitar secundario" aria-label="Quitar adición">×</button></td></tr>`;
+    <td><button type="button" class="quitar secundario" aria-label="Quitar adición">Quitar</button></td></tr>`;
 }
 
 export function activarEditorAdiciones(raiz) {
@@ -256,3 +256,15 @@ export function evaluarEjecucion(c, { hoy = new Date().toISOString().slice(0, 10
 }
 
 export const alertasHtml = items => items.map(x => alertaHtml(x.id, x.r, x.detalle)).join('');
+
+// Última estación de la ruta, a partir del resultado de la regla de liquidación.
+// Devuelve la estación y el color del tramo que llega a ella. `fecha`: fecha de liquidación, si SECOP la reporta.
+export function estacionLiquidacion(r, fecha) {
+  const base = { etapa: 'Liquidación', ir: 'ejecucion' };
+  if (fechaISO(fecha)) return { tramo: 'ok', estacion: { ...base, titulo: 'Liquidación', detalle: fmtFecha(fecha), estado: 'ok' } };
+  if (r.nivel === 'alta') return { tramo: 'alta', estacion: { ...base, titulo: 'Liquidación sin reportar', detalle: `Venció el ${fmtFecha(r.limiteFinal)}`, estado: 'alta' } };
+  if (r.nivel === 'media') return { tramo: 'media', estacion: { ...base, titulo: 'Liquidación pendiente', detalle: `De común acuerdo hasta el ${fmtFecha(r.limiteBilateral)}`, estado: 'media' } };
+  if (r.nivel === 'ok' && !r.limiteBilateral) return { tramo: 'ok', estacion: { ...base, titulo: 'Cerrado o liquidado', detalle: 'Según el estado en SECOP', estado: 'ok' } };
+  const detalle = r.limiteBilateral ? `En plazo hasta el ${fmtFecha(r.limiteBilateral)}` : r.motivo.replace(/\.$/, '');
+  return { tramo: 'neutra', estacion: { ...base, titulo: 'Liquidación', detalle, estado: 'pend' } };
+}

@@ -2,7 +2,7 @@
 
 import { consultar, lit, patronLike, whereAviso } from '../api.js';
 import { esc, valor, fmtCOP, fmtFecha, urlDe, fuenteChip, NR } from '../util.js';
-import { cargando, errorHtml } from './comun.js';
+import { cargando, errorHtml, banda, miniRuta } from './comun.js';
 import { ENLACES } from '../normas.js';
 
 const POR_PAGINA = 20;
@@ -37,6 +37,7 @@ const FUENTES = {
       proveedor: r.nom_raz_social_contratista, doc: r.documento_proveedor,
       valor: r.valor_contrato, valorEtiqueta: 'Valor del contrato',
       fecha: r.fecha_de_firma_del_contrato, fechaEtiqueta: 'Firma',
+      inicio: r.fecha_inicio_ejecuci_n, fin: r.fecha_fin_ejecuci_n,
       modalidad: r.modalidad_de_contrataci_n, estado: r.estado_del_proceso,
       origen: r.origen === 'SECOPI' ? 'SECOP I' : 'SECOP II',
       numero: r.numero_del_contrato, referencia: r.numero_de_proceso,
@@ -54,6 +55,8 @@ const FUENTES = {
       proveedor: r.nombre_del_proveedor, doc: r.nit_del_proveedor_adjudicado,
       valor: r.precio_base, valorEtiqueta: 'Precio base',
       fecha: r.fecha_de_publicacion_del, fechaEtiqueta: 'Publicación',
+      inicio: r.fecha_de_publicacion_del, fin: r.fecha_de_recepcion_de,
+      textosRuta: { antes: 'Se publica el', durante: 'Recibe ofertas hasta el', despues: 'Cierre de ofertas el' },
       modalidad: r.modalidad_de_contratacion, estado: r.estado_del_procedimiento,
       origen: 'SECOP II', numero: r.id_del_proceso, referencia: r.referencia_del_proceso,
       ficha: `#/proceso/${encodeURIComponent(r.id_del_proceso)}`,
@@ -92,15 +95,15 @@ function formulario(p) {
   const opt = (lista, sel) => lista.map(([v, t]) => `<option value="${v}"${v === sel ? ' selected' : ''}>${esc(t)}</option>`).join('');
   const val = k => esc(p[k] || '');
   return `
-  <form id="ir-numero" class="tarjeta ir-numero">
+  ${banda({ titulo: 'Buscar en SECOP', meta: 'Contratos de SECOP I y II y procesos de SECOP II, con los datos abiertos de datos.gov.co.', extra: `<form id="ir-numero" class="ir-numero no-imprimir">
     <label for="numero">Revisar un proceso o contrato por su número</label>
     <div class="fila-input">
       <input id="numero" name="numero" placeholder="CO1.PCCNTR.…, CO1.REQ.…, CO1.BDOS.…, CO1.NTC.…, constancia SECOP I o referencia" value="${val('numero')}" autocomplete="off">
       <button type="submit">Revisar</button>
     </div>
-  </form>
+  </form>` })}
   <form id="form-buscar" class="tarjeta">
-    <h2>Buscar</h2>
+    <h3>Buscar con filtros</h3>
     <div class="grilla-form">
       <label class="ancho">Texto libre<input name="texto" value="${val('texto')}" placeholder="Objeto, proveedor, palabra clave…"></label>
       <label>Buscar en<select name="fuente">${opt(Object.entries(FUENTES).map(([k, v]) => [k, v.etiqueta]), p.fuente || 'integrado')}</select></label>
@@ -121,20 +124,25 @@ function formulario(p) {
   <aside class="tarjeta enlaces-verificacion"><h3>Verificación manual</h3><ul>${ENLACES.map(e => `<li><a href="${e.url}" target="_blank" rel="noopener">${esc(e.texto)}</a></li>`).join('')}</ul></aside>`;
 }
 
+// Fila de resultado con columnas fijas: contrato o proceso, proveedor y valor.
 function tarjetaResultado(x) {
   return `<article class="resultado">
-    <div class="res-meta"><span class="etiqueta">${esc(x.origen)}</span><span>${esc(valor(x.modalidad))}</span><span>${esc(valor(x.estado))}</span></div>
-    <h3><a href="${x.ficha}">${esc(valor(x.titulo))}</a></h3>
-    <p class="res-entidad">${esc(valor(x.entidad))}</p>
-    <dl class="res-datos">
-      <div><dt>Proveedor</dt><dd>${esc(valor(x.proveedor))}${x.doc ? ` · ${esc(x.doc)}` : ''}</dd></div>
-      <div><dt>${esc(x.valorEtiqueta)}</dt><dd>${esc(fmtCOP(x.valor))}</dd></div>
-      <div><dt>${esc(x.fechaEtiqueta)}</dt><dd>${esc(fmtFecha(x.fecha))}</dd></div>
-      <div><dt>Número</dt><dd><code>${esc(valor(x.numero))}</code>${x.referencia ? ` · ${esc(x.referencia)}` : ''}</dd></div>
-    </dl>
-    <div class="acciones"><a class="boton" href="${x.ficha}">Ver ficha</a>${x.url ? `<a class="boton secundario" href="${esc(x.url)}" target="_blank" rel="noopener">Ver en SECOP</a>` : `<span class="nr">Enlace: ${NR}</span>`}</div>
+    <div>
+      <div class="res-meta"><span class="etiqueta">${esc(x.origen)}</span><span>${esc(valor(x.modalidad))}</span><span>${esc(valor(x.estado))}</span></div>
+      <h3><a href="${x.ficha}">${esc(valor(x.titulo))}</a></h3>
+      <p class="res-entidad">${esc(valor(x.entidad))}</p>
+      <div class="res-meta"><code>${esc(valor(x.numero))}</code>${x.referencia ? `<span>${esc(x.referencia)}</span>` : ''}</div>
+      ${miniRuta(x.inicio, x.fin, x.textosRuta)}
+    </div>
+    <div class="res-prov">${esc(valor(x.proveedor))}${x.doc ? `<small>${esc(x.doc)}</small>` : ''}</div>
+    <div class="res-valor"><b>${esc(fmtCOP(x.valor))}</b><small>${esc(x.valorEtiqueta)} · ${esc(x.fechaEtiqueta)}: ${esc(fmtFecha(x.fecha))}</small>
+      ${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">Ver en SECOP</a>` : `<small>Enlace: ${NR}</small>`}</div>
   </article>`;
 }
+
+const listaResultados = filas => `<div class="lista-resultados">
+  <div class="res-cab" aria-hidden="true"><span>Contrato o proceso</span><span>Proveedor</span><span>Valor</span></div>
+  ${filas.map(tarjetaResultado).join('')}</div>`;
 
 async function ejecutarBusqueda(cont, p) {
   const f = FUENTES[p.fuente] || FUENTES.integrado;
@@ -155,12 +163,12 @@ async function ejecutarBusqueda(cont, p) {
     const filas = r.filas.slice(0, POR_PAGINA).map(f.fila)
       .filter(x => { const k = `${x.numero}|${x.doc}|${x.valor}`; return !vistos.has(k) && vistos.add(k); });
     const nav = `<nav class="paginacion">
-      ${pagina > 0 ? `<a class="boton secundario" href="${hashBusqueda({ ...p, pagina: pagina - 1 })}">← Anterior</a>` : '<span></span>'}
+      ${pagina > 0 ? `<a class="boton secundario" href="${hashBusqueda({ ...p, pagina: pagina - 1 })}">Anterior</a>` : '<span></span>'}
       <span>Página ${pagina + 1}</span>
-      ${hayMas ? `<a class="boton secundario" href="${hashBusqueda({ ...p, pagina: pagina + 1 })}">Siguiente →</a>` : '<span></span>'}
+      ${hayMas ? `<a class="boton secundario" href="${hashBusqueda({ ...p, pagina: pagina + 1 })}">Siguiente</a>` : '<span></span>'}
     </nav>`;
     cont.innerHTML = filas.length
-      ? `<div class="lista-resultados">${filas.map(tarjetaResultado).join('')}</div>${nav}${fuenteChip(r)}`
+      ? `${listaResultados(filas)}${nav}${fuenteChip(r)}`
       : `<div class="tarjeta"><p>No hay resultados con esos filtros.</p>${fuenteChip(r)}</div>`;
   } catch (e) {
     cont.innerHTML = errorHtml(e);
@@ -188,7 +196,7 @@ async function buscarNumero(cont, numero) {
     ];
     cont.innerHTML = `<div class="tarjeta"><h2>Resultados para <code>${esc(n)}</code></h2>
       ${filas.length ? '' : '<p>No se encontró ese número como referencia de proceso, número de contrato ni aviso. Prueba con el ID del contrato (CO1.PCCNTR.…) o búscalo en el SECOP.</p>'}</div>
-      <div class="lista-resultados">${filas.map(tarjetaResultado).join('')}</div>
+      ${filas.length ? listaResultados(filas) : ''}
       ${res.map(fuenteChip).join('')}`;
   } catch (e) {
     cont.innerHTML = errorHtml(e);

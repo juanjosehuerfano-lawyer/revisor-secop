@@ -4,15 +4,14 @@ import { esc, almacen, fmtCOP, fmtFecha, descargar } from '../util.js';
 import { REGLAS } from '../normas.js';
 import { SMMLV } from '../smmlv.js';
 import { limpiarCache } from '../api.js';
-import { estadoValidacion } from './comun.js';
+import { estadoValidacion, banda } from './comun.js';
 
 export function vistaReglas(raiz) {
   const pintar = () => {
     const val = almacen.leer('validaciones', {});
     raiz.innerHTML = `
-      <section class="tarjeta"><h2>Reglas de alerta</h2>
-        <p>Cada regla queda pendiente hasta que la valides. Al validarla, la fecha aparece en todas las alertas de esa regla. La validación se guarda solo en este navegador.</p></section>
-      ${REGLAS.map(r => `<section class="tarjeta regla">
+      ${banda({ titulo: 'Reglas de alerta', meta: 'Cada regla queda pendiente hasta que la valides. Al validarla, la fecha aparece en todas las alertas de esa regla. La validación se guarda solo en este navegador.' })}
+      ${REGLAS.map(r => `<section class="seccion regla">
         <h3>${esc(r.titulo)}</h3>
         <p>${esc(r.texto)}</p>
         <dl class="grilla-datos">
@@ -26,7 +25,7 @@ export function vistaReglas(raiz) {
           ? `<button type="button" class="secundario" data-quitar="${r.id}">Quitar validación</button>`
           : `<button type="button" data-validar="${r.id}">Marcar como validada</button>`}</div>
       </section>`).join('')}
-      <section class="tarjeta"><h3>Tabla de SMMLV usada</h3>
+      <section class="seccion"><h3>Tabla de SMMLV usada</h3>
         <p>Valores en pesos por año. Verifícalos contra los decretos del Gobierno. Para cambiarlos, edita <code>js/smmlv.js</code>.</p>
         <div class="tabla-scroll"><table><thead><tr><th>Año</th><th>SMMLV</th></tr></thead><tbody>
           ${Object.entries(SMMLV).reverse().map(([a, v]) => `<tr><td>${a}</td><td>${fmtCOP(v)}</td></tr>`).join('')}
@@ -72,7 +71,8 @@ function restaurarRespaldo(texto) {
 export function vistaAjustes(raiz) {
   const aj = almacen.leer('ajustes', {});
   raiz.innerHTML = `
-    <section class="tarjeta"><h2>Ajustes</h2>
+    ${banda({ titulo: 'Ajustes', meta: 'Token de datos.gov.co, caché de consultas y copia de seguridad de tus datos.' })}
+    <section class="tarjeta">
       <form id="form-ajustes">
         <label class="ancho">Token de aplicación de datos.gov.co (opcional)
           <input name="token" value="${esc(aj.token || '')}" autocomplete="off" spellcheck="false"></label>
@@ -80,12 +80,12 @@ export function vistaAjustes(raiz) {
         <div class="acciones"><button type="submit">Guardar</button></div>
       </form>
     </section>
-    <section class="tarjeta"><h3>Caché de consultas</h3>
+    <section class="seccion"><h3>Caché de consultas</h3>
       <p>Las consultas se guardan 6 horas para ahorrar cuota. Cada dato muestra la hora real en que se consultó.</p>
       <div class="acciones"><button type="button" class="secundario" id="limpiar">Vaciar caché</button></div>
       <p id="msg-cache" class="ayuda-campo" aria-live="polite"></p>
     </section>
-    <section class="tarjeta"><h3>Datos guardados en este navegador</h3>
+    <section class="seccion"><h3>Datos guardados en este navegador</h3>
       <p>Tus casos y notas, las validaciones de reglas, los checklists, los valores de adiciones y los topes de fraccionamiento se guardan solo aquí. No salen de tu equipo.
         Si borras los datos del navegador o cambias de dispositivo, se pierden: descarga una copia de seguridad y restáurala cuando la necesites.</p>
       <div class="acciones">

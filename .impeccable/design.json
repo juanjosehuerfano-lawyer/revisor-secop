@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T09:38:42-05:00",
+  "title": "Design System: Revisor SECOP",
+  "extensions": {
+    "colorMeta": {
+      "azul-medianoche": { "role": "primary", "displayName": "Azul medianoche", "canonical": "#0e1b3d", "tonalRamp": ["#060b1c", "#0e1b3d", "#1d2f63", "#2a3a66", "#b9c3de"] },
+      "amarillo-vial": { "role": "secondary", "displayName": "Amarillo vial", "canonical": "#ffcd00", "tonalRamp": ["#f5a300", "#ffcd00", "#ffdc4d", "#fff4cc"] },
+      "suelo-frio": { "role": "neutral", "displayName": "Suelo frío", "canonical": "#f3f5fa", "tonalRamp": ["#ffffff", "#f3f5fa", "#e6ebf5", "#c9d1e4", "#8e9bbf", "#46557a"] },
+      "rubrica": { "role": "tertiary", "displayName": "Rúbrica", "canonical": "#b3261e", "tonalRamp": ["#b3261e", "#c4261b", "#d92d20", "#fdecea"] }
+    },
+    "typographyMeta": {
+      "titulo-franja": { "displayName": "Título de la franja", "purpose": "Título de cada vista, dentro de la franja azul." },
+      "cifra-tablero": { "displayName": "Cifra del tablero", "purpose": "Cifras grandes del tablero amarillo." },
+      "seccion": { "displayName": "Sección", "purpose": "Títulos de sección numerados." },
+      "alerta-titulo": { "displayName": "Alerta", "purpose": "Título de una alerta anotada." },
+      "cuerpo": { "displayName": "Cuerpo", "purpose": "Interfaz, datos y formularios." },
+      "rotulo": { "displayName": "Rótulo", "purpose": "Encabezados de tabla, subtítulos y etapas de la ruta, en mayúsculas." }
+    },
+    "shadows": [
+      { "name": "franja-completa", "value": "0 0 0 100vmax #0e1b3d", "purpose": "Extiende la franja de borde a borde; no es elevación." }
+    ],
+    "motion": [
+      { "name": "estado", "value": "160ms", "purpose": "Cambios de color en botones, pestañas y enlaces." },
+      { "name": "estacion", "value": "200ms cubic-bezier(.16, 1, .3, 1)", "purpose": "La estación crece al pasar sobre ella." },
+      { "name": "destello", "value": "1.4s ease-out", "purpose": "Resalta la sección a la que lleva una estación." }
+    ],
+    "breakpoints": [
+      { "name": "celular", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón principal",
+      "kind": "button",
+      "refersTo": "boton-principal",
+      "description": "Acción principal sobre el suelo frío.",
+      "html": "<button class=\"ds-boton\">Buscar</button>",
+      "css": ".ds-boton { min-height: 44px; padding: 8px 18px; border-radius: 99px; border: 2px solid #0e1b3d; background: #0e1b3d; color: #fff; font: 700 16px 'Hanken Grotesk', system-ui, sans-serif; } .ds-boton:hover { background: #1d2f63; border-color: #1d2f63; }"
+    },
+    {
+      "name": "Celda del tablero",
+      "kind": "custom",
+      "refersTo": "celda-tablero",
+      "description": "Cifra grande con rótulo, como en la valla de una obra.",
+      "html": "<dl class=\"ds-tablero\"><div><dt>Valor del contrato</dt><dd>$ 285.714.286</dd></div></dl>",
+      "css": ".ds-tablero { margin: 0; } .ds-tablero > div { background: #ffcd00; color: #0e1b3d; border: 3px solid #0e1b3d; padding: 12px 18px 14px; font-family: 'Hanken Grotesk', system-ui, sans-serif; } .ds-tablero dt { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; } .ds-tablero dd { margin: 3px 0 0; font-size: 30px; font-weight: 800; line-height: 1.1; }"
+    },
+    {
+      "name": "Campo",
+      "kind": "input",
+      "refersTo": "campo",
+      "description": "Campo de formulario sobre el suelo frío.",
+      "html": "<input class=\"ds-campo\" placeholder=\"Ej.: Alcaldía de Yopal\">",
+      "css": ".ds-campo { width: 100%; padding: 10px 12px; border: 1px solid #8e9bbf; border-radius: 6px; background: #fff; color: #0e1b3d; font: 400 16px 'Hanken Grotesk', system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El contrato como recorrido, valla y código anotado",
+    "overview": "Revisor SECOP muestra un contrato público como un recorrido con estaciones, un tablero de cifras y un texto anotado con su norma. No usa tarjetas ni sombras: la jerarquía la llevan la letra, las reglas y tres campos de color.",
+    "keyCharacteristics": ["Franja azul medianoche con la ruta del contrato", "Tablero amarillo de cifras", "Alertas numeradas con la norma al margen", "Señales por forma, no solo por color", "PDF sobrio en blanco y negro"],
+    "rules": [
+      { "name": "El nivel no depende del color", "body": "Cada nivel de alerta tiene una forma propia y se escribe en la nota del margen.", "section": "colors" },
+      { "name": "El amarillo no decora", "body": "Solo en el tablero, la acción principal de la franja y la señal de revisar.", "section": "colors" },
+      { "name": "Sin rótulo encima del título", "body": "Los datos de identificación van debajo del título de la franja.", "section": "typography" }
+    ],
+    "dos": ["Abrir cada vista con banda()", "Numerar los bloques de datos con seccion()", "Mostrar la fuente al final de cada sección"],
+    "donts": ["No usar tarjetas blancas con sombra", "No usar glifos en lugar de íconos", "No enlazar fuentes externas"]
+  }
+}

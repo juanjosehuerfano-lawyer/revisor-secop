@@ -121,3 +121,11 @@ export function descargar(nombre, texto, tipo = 'text/csv;charset=utf-8') {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+
+// Valor en millones de pesos, para rótulos cortos: "$ 18.400 M". Quien lo usa explica la unidad.
+export function fmtMillones(v) {
+  const n = num(v);
+  if (n === null) return NR;
+  const m = n / 1e6;
+  return `$ ${NUM.format(m >= 100 ? Math.round(m) : Math.round(m * 10) / 10)} M`;
+}

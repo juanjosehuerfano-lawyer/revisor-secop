@@ -2,3 +2,8 @@
 docs/muestras/
 # Configuración local del entorno de desarrollo.
 .claude/
+# Material de trabajo del diseño: bocetos, capturas y notas de la ronda de opciones. No hace parte de la app publicada.
+.impeccable/*
+!.impeccable/design.json
+!.impeccable/config.json
+docs/diseno/

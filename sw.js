@@ -1,10 +1,11 @@
 // Service worker: guarda la interfaz para abrirla sin conexión. Los datos de la API no pasan por aquí
 // (tienen su propia caché con hora de consulta en js/api.js).
-const VERSION = 'revisor-secop-v3';
+const VERSION = 'revisor-secop-v4';
 const ARCHIVOS = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icono.svg', 'icons/icono-192.png',
   'js/app.js', 'js/api.js', 'js/util.js', 'js/reglas.js', 'js/normas.js', 'js/festivos.js', 'js/smmlv.js',
   'js/vistas/buscar.js', 'js/vistas/ficha.js', 'js/vistas/analisis.js', 'js/vistas/ayudas.js', 'js/vistas/reglas.js', 'js/vistas/comun.js', 'js/vistas/veeduria.js', 'js/vistas/casos.js',
+  'fonts/hanken-grotesk-latin.woff2', 'fonts/source-serif-4-latin.woff2',
 ];
 
 self.addEventListener('install', e => {

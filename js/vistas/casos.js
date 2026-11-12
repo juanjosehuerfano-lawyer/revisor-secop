@@ -2,12 +2,13 @@
 // Se guardan solo en este navegador (clave "casos"); la copia de seguridad está en Ajustes.
 
 import { esc, almacen, fmtFecha } from '../util.js';
+import { banda, ICONO_GUARDAR } from './comun.js';
 
 const CLAVE = 'casos';
 const leer = () => { const l = almacen.leer(CLAVE, []); return Array.isArray(l) ? l : []; };
 // La ruta viene del almacenamiento o de una copia restaurada: solo se enlazan rutas internas de la app.
 const rutaSegura = c => String(c.ruta || '').startsWith('#/') ? c.ruta : '#/casos';
-const textoBoton = guardado => guardado ? '★ En mis casos' : '☆ Guardar en mis casos';
+const textoBoton = guardado => `${ICONO_GUARDAR}${guardado ? 'En mis casos' : 'Guardar caso'}`;
 
 function guardar(lista) {
   const ok = almacen.guardar(CLAVE, lista);
@@ -34,7 +35,7 @@ export function activarSeguir(raiz) {
     }
     if (!guardar(lista)) return;
     b.setAttribute('aria-pressed', String(i < 0));
-    b.textContent = textoBoton(i < 0);
+    b.innerHTML = textoBoton(i < 0);
   }));
 }
 
@@ -42,9 +43,7 @@ export function vistaCasos(raiz) {
   const pintar = () => {
     const lista = leer();
     raiz.innerHTML = `
-      <section class="tarjeta"><h2>Mis casos</h2>
-        <p>Contratos, procesos, entidades y proveedores que guardaste para hacerles seguimiento. Los casos y sus notas se guardan solo en este navegador:
-          haz una copia de seguridad en <a href="#/ajustes">Ajustes</a>.</p></section>
+      ${banda({ titulo: 'Mis casos', meta: 'Contratos, procesos, entidades y proveedores que guardaste para hacerles seguimiento. Los casos y sus notas se guardan solo en este navegador: haz una copia de seguridad en <a href="#/ajustes">Ajustes</a>.' })}
       ${lista.length ? `<div class="lista-resultados">${lista.map((c, i) => `<article class="resultado caso">
         <div class="res-meta"><span class="etiqueta">${esc(c.tipo)}</span><span>Guardado el ${fmtFecha(c.creado)}</span></div>
         <h3><a href="${esc(rutaSegura(c))}">${esc(c.titulo)}</a></h3>
@@ -52,7 +51,7 @@ export function vistaCasos(raiz) {
         <label>Notas<textarea rows="3" data-nota="${i}">${esc(c.nota)}</textarea></label>
         <div class="acciones no-imprimir"><a class="boton" href="${esc(rutaSegura(c))}">Abrir</a><button type="button" class="secundario" data-quitar="${i}">Quitar</button></div>
       </article>`).join('')}</div>`
-        : `<div class="tarjeta"><p>Aún no has guardado casos. Abre un contrato, un proceso o una veeduría y usa el botón <strong>☆ Guardar en mis casos</strong>.</p></div>`}`;
+        : `<div class="tarjeta"><p>Aún no has guardado casos. Abre un contrato, un proceso o una veeduría y usa el botón <strong>Guardar caso</strong>.</p></div>`}`;
   };
   pintar();
   raiz.addEventListener('input', ev => {
