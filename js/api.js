@@ -11,9 +11,40 @@ export const CONJUNTOS = {
   proveedores: { id: 'qmzu-gj57', nombre: 'SECOP II – Proveedores registrados' },
   paa:         { id: 'b6m4-qgqv', nombre: 'SECOP II – Plan Anual de Adquisiciones (encabezado)' },
   secop1:      { id: 'f789-7hwg', nombre: 'SECOP I – Procesos de Compra Pública' },
+  // Trae el valor total del contrato después de cada modificación (no el valor de la adición). Ver docs/esquemas.md, hallazgo 18.
+  modificaciones: { id: 'u8cx-r425', nombre: 'SECOP II – Modificaciones a contratos' },
+  proponentes: { id: 'hgi6-6wh3', nombre: 'SECOP II – Proponentes por Proceso' },
+  // Ofertas y archivos vienen partidos por años: ver conjuntosOfertas() y conjuntosArchivos().
+  ofertas2022: { id: 'bpan-xvj3', nombre: 'SECOP II – Ofertas por Proceso (hasta 2022)' },
+  ofertas2023: { id: 'b28v-edj8', nombre: 'SECOP II – Ofertas por Proceso (2023 y 2024)' },
+  ofertas2025: { id: 'wi7w-2nvm', nombre: 'SECOP II – Ofertas por Proceso (2025 y 2026)' },
+  archivos2021: { id: 'f8va-cf4m', nombre: 'SECOP II – Archivos Descarga (hasta 2021)' },
+  archivos2022: { id: 'kgcd-kt7i', nombre: 'SECOP II – Archivos Descarga (2022)' },
+  archivos2023: { id: '3skv-9na7', nombre: 'SECOP II – Archivos Descarga (2023)' },
+  archivos2024: { id: 'nbae-kzan', nombre: 'SECOP II – Archivos Descarga (2024)' },
+  archivos2025: { id: 'h4m3-b4e2', nombre: 'SECOP II – Archivos Descarga (2025)' },
+  archivos2026: { id: 'dmgg-8hin', nombre: 'SECOP II – Archivos Descarga (2026)' },
+  // SECOP I: proponentes y archivos se unen por el número de constancia.
+  secop1Proponentes: { id: 'tauh-5jvn', nombre: 'SECOP I – Proponentes' },
+  secop1Archivos: { id: 'ps88-5e3v', nombre: 'SECOP I – Archivos Descarga' },
+  secop1ArchivosHist: { id: '8kpz-m6cc', nombre: 'SECOP I – Archivos Descarga Histórico' },
   // SECOP Integrado cubre SECOP I y II con campos reducidos: es la fuente de la búsqueda y de la veeduría, y el respaldo de la ficha.
   integrado:   { id: 'rpmr-utcd', nombre: 'SECOP Integrado (SECOP I y II)' },
 };
+
+// Conjuntos de ofertas que pueden tener las de un proceso publicado en `anio`. Las ofertas se registran al cierre,
+// que puede caer en el periodo siguiente; sin año se consultan todos.
+export function conjuntosOfertas(anio) {
+  if (!anio) return ['ofertas2022', 'ofertas2023', 'ofertas2025'];
+  if (anio >= 2025) return ['ofertas2025'];
+  return anio >= 2023 ? ['ofertas2023', 'ofertas2025'] : ['ofertas2022', 'ofertas2023'];
+}
+
+// Conjuntos de archivos desde el año `anio` (los documentos se cargan durante toda la vida del contrato).
+// Cuando Colombia Compra publique el conjunto de un año nuevo, agrégalo a CONJUNTOS: aquí se toma solo.
+export function conjuntosArchivos(anio) {
+  return Object.keys(CONJUNTOS).filter(k => k.startsWith('archivos') && (!anio || Number(k.slice(8)) >= Math.max(anio, 2021)));
+}
 
 // Filtro por aviso CO1.NTC.… dentro de una URL del SECOP (termina en el número o sigue con '&').
 export function whereAviso(campo, ntc) {
@@ -78,6 +109,11 @@ export async function consultar(nombre, params = {}, { sinCache = false } = {}) 
   let resp;
   try {
     resp = await fetch(url, { headers });
+    // datos.gov.co responde a veces 503 en conjuntos grandes y al momento ya contesta: un solo reintento.
+    if (resp.status >= 500) {
+      await new Promise(r => setTimeout(r, 1500));
+      resp = await fetch(url, { headers });
+    }
   } catch {
     throw new ErrorConsulta('No hay conexión con datos.gov.co.', url, conjunto);
   }

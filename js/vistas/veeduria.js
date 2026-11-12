@@ -11,7 +11,7 @@ import { botonSeguir, activarSeguir } from './casos.js';
 const POR_PAGINA_API = 50000;
 const MAX_FILAS = 150000;
 // Valores por debajo de esto (p. ej. $1) son registros de prueba o sin diligenciar: no sirven para comparar.
-const VALOR_MINIMO_REAL = 10000;
+export const VALOR_MINIMO_REAL = 10000;
 const CAMPOS = 'numero_del_contrato,origen,fecha_de_firma_del_contrato,fecha_inicio_ejecuci_n,fecha_fin_ejecuci_n,modalidad_de_contrataci_n,valor_contrato,documento_proveedor,nom_raz_social_contratista,objeto_del_proceso,objeto_a_contratar,nombre_de_la_entidad,nit_de_la_entidad,codigo_entidad_en_secop,estado_del_proceso,tipo_de_contrato';
 
 const ETIQUETA_CLASE = {

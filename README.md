@@ -7,6 +7,8 @@ App web instalable (PWA) para revisar procesos y contratos de entidades pública
 - Incluye alertas con la norma citada: adiciones de más del 50 % (Ley 80/1993, art. 40), plazo corto de ofertas, proponente único y contratación directa repetida. También trae un checklist precontractual guiado.
 - **Veeduría:** analiza en su conjunto la contratación de una entidad o de un proveedor en un periodo. Muestra la contratación por modalidad y por mes, la concentración en proveedores, la contratación directa repetida, posibles fraccionamientos frente al tope del PAA, procesos con un solo oferente y contratos con valores distintos.
 - **Alertas de ejecución:** inicio de ejecución antes de la firma, prórrogas de la mitad o más del plazo, contratos terminados sin liquidación reportada y pagos por encima del valor del contrato.
+- **Adiciones calculadas:** la app obtiene el valor de cada adición de SECOP II comparando el valor del contrato antes y después de cada modificación publicada.
+- **Proponentes, ofertas y documentos:** cada ficha lista quién ofertó y por cuánto, y los documentos del expediente con su enlace al SECOP.
 - **Casos:** guarda contratos, procesos, entidades y proveedores con tus notas, y descarga una copia de seguridad desde Ajustes.
 - Incluye ayudas en lenguaje sencillo, exporta a PDF y descarga los contratos de una veeduría en un archivo para Excel (CSV).
 

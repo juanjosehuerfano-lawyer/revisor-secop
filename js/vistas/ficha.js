@@ -9,7 +9,8 @@ import {
   evaluarEjecucion, alertasHtml, estacionLiquidacion,
 } from './analisis.js';
 import { botonSeguir, activarSeguir } from './casos.js';
-import { evaluarAdiciones } from '../reglas.js';
+import { evaluarAdiciones, adicionesDesdeModificaciones, claseModalidad } from '../reglas.js';
+import { pendiente, cargarOfertas, cargarDocumentos, cargarProponentesSecop1, cargarDocumentosSecop1 } from './expediente.js';
 import { documentoBase } from './veeduria.js';
 
 const AVISO_LEGAL = `<p class="aviso-legal">Herramienta de apoyo a la revisión. No reemplaza el análisis del expediente completo en SECOP.
@@ -207,9 +208,13 @@ export async function vistaContrato(raiz, id) {
   }
 
   raiz.innerHTML = cargando('Consultando proceso, modificaciones, facturas y ejecución…');
-  const [proc, adic, fact, ejec, prov, hist] = await Promise.all([
+  const [proc, adic, modi, fact, ejec, prov, hist] = await Promise.all([
     buscarProceso(c),
     consultarSeguro('adiciones', { id_contrato: c.id, $order: 'fecharegistro ASC', $limit: 500 }),
+    consultarSeguro('modificaciones', {
+      id_contrato: c.id, $select: 'identificador_modificacion,proposito_modificacion,valor_modificacion,dias_extendidos,fecha_de_aprobacion,fecha_creacion,estado_modificacion',
+      $order: 'fecha_creacion ASC', $limit: 500,
+    }),
     consultarSeguro('facturas', { id_contrato: c.id, $limit: 500 }),
     consultarSeguro('ejecucion', { identificadorcontrato: c.id, $limit: 500 }),
     c.docProveedor ? consultarSeguro('proveedores', { nit: c.docProveedor, $limit: 3 }) : null,
@@ -230,22 +235,35 @@ export async function vistaContrato(raiz, id) {
   });
 
   // Ejecución: regla del 50 %
-  // Muchas adiciones se registran como "Modificacion General" y solo la descripción dice "se adiciona".
-  const porTipo = adic.filas.filter(f => /adici/i.test(f.tipo || ''));
-  const porDescripcion = adic.filas.filter(f => !/adici|reducc/i.test(f.tipo || '') && /adici/i.test(f.descripcion || ''));
-  const adicionesValor = [...porTipo, ...porDescripcion].sort((a, b) => String(a.fecharegistro).localeCompare(String(b.fecharegistro)));
+  // "Modificaciones a contratos" trae el valor total del contrato después de cada modificación publicada: la adición es
+  // la diferencia con el valor anterior. Si ese conjunto no muestra cambios de valor, quedan las filas de "Adiciones"
+  // (sin valor) para que el abogado las digite. Muchas se registran como "Modificacion General" y solo la descripción dice "se adiciona".
   const claveAdic = `adiciones:${c.id}`;
   const candidatos = [];
   if (num(p?.valor_total_adjudicacion) > 0) candidatos.push({ etiqueta: 'Valor adjudicado en el proceso (p6dx-8zbt)', valor: num(p.valor_total_adjudicacion) });
   if (num(p?.precio_base) > 0) candidatos.push({ etiqueta: 'Precio base del proceso (p6dx-8zbt)', valor: num(p.precio_base) });
   if (num(c.valor) > 0) candidatos.push({ etiqueta: `Valor del contrato reportado hoy (${base.conjunto.id})`, valor: num(c.valor) });
+  // Valor inicial por defecto: el adjudicado. En contratación directa no hay puja que baje el precio, así que sirve el precio base.
+  const directa = claseModalidad(p?.modalidad_de_contratacion || c.modalidad) === 'directa';
+  const inicial = candidatos.find(x => x.etiqueta.startsWith('Valor adjudicado')) || (directa && candidatos.find(x => x.etiqueta.startsWith('Precio base'))) || null;
+  const calculo = adicionesDesdeModificaciones(modi.filas.map(m => ({
+    id: m.identificador_modificacion, fecha: m.fecha_de_aprobacion || m.fecha_creacion, valor: num(m.valor_modificacion),
+    estado: m.estado_modificacion, proposito: m.proposito_modificacion,
+  })), inicial?.valor);
+  const porTipo = adic.filas.filter(f => /adici/i.test(f.tipo || ''));
+  const porDescripcion = adic.filas.filter(f => !/adici|reducc/i.test(f.tipo || '') && /adici/i.test(f.descripcion || ''));
+  const sinValor = [...porTipo, ...porDescripcion].sort((a, b) => String(a.fecharegistro).localeCompare(String(b.fecharegistro)));
   const editor = editorAdiciones({
-    clave: claveAdic, fechaInicial: c.fechaFirma, candidatosInicial: candidatos,
-    valorInicialPorDefecto: candidatos[0]?.etiqueta.startsWith('Valor adjudicado') ? candidatos[0] : null,
-    adicionesPorDefecto: adicionesValor.map(f => ({ fecha: f.fecharegistro, valor: '', descripcion: `${f.identificador || ''} · ${f.descripcion || ''}` })),
-    nota: `El conjunto de Adiciones de SECOP II no publica el valor de cada modificación. Para este contrato, SECOP registra ${porTipo.length} modificación(es) de tipo "Adición en el valor" y ${porDescripcion.length} cuya descripción menciona una adición. Abre cada documento en el SECOP, digita su valor y borra las filas que no sean adiciones en valor. Lo que digites se guarda solo en este navegador.`,
+    clave: claveAdic, fechaInicial: c.fechaFirma, candidatosInicial: candidatos, valorInicialPorDefecto: inicial,
+    adicionesPorDefecto: calculo.adiciones.length
+      ? calculo.adiciones.map(a => ({ fecha: a.fecha, valor: a.valor, descripcion: `${a.id || ''} · ${String(a.proposito || '').slice(0, 160)} · Valor del contrato tras la modificación: ${fmtCOP(a.valorTras)}` }))
+      : sinValor.map(f => ({ fecha: f.fecharegistro, valor: '', descripcion: `${f.identificador || ''} · ${f.descripcion || ''}` })),
+    nota: modi.error
+      ? `No se pudo consultar el conjunto de modificaciones (u8cx-r425), con el que la app calcula las adiciones: ${modi.error.message} Recarga la página para intentarlo de nuevo. Mientras tanto, SECOP registra ${porTipo.length} modificación(es) de tipo "Adición en el valor" y ${porDescripcion.length} cuya descripción menciona una adición: puedes digitar su valor tomándolo de cada documento.`
+      : calculo.adiciones.length
+      ? `SECOP no publica el valor de cada adición, sino el valor total del contrato después de cada modificación publicada (conjunto u8cx-r425). La app calculó ${calculo.adiciones.length} adición(es) restando el valor anterior${inicial ? `, a partir de: ${inicial.etiqueta}` : ''}.${calculo.sinBase ? ' No encontró un valor inicial confiable: elige o digita el valor inicial y agrega la primera adición, que no se pudo calcular.' : ''} Verifica cada valor contra el documento de la modificación; si cambias el valor inicial, corrige la primera fila. Lo que digites se guarda solo en este navegador.`
+      : `SECOP no publica el valor de cada adición, y el conjunto de modificaciones (u8cx-r425) no muestra aumentos en el valor de este contrato${calculo.sinBase ? ' que se puedan calcular sin un valor inicial' : ''}. SECOP registra ${porTipo.length} modificación(es) de tipo "Adición en el valor" y ${porDescripcion.length} cuya descripción menciona una adición. Abre cada documento en el SECOP, digita su valor y borra las filas que no sean adiciones en valor. Lo que digites se guarda solo en este navegador.`,
   });
-
   const datosClave = `<dl class="grilla-datos">
     <div class="campo ancho"><dt>Objeto</dt><dd>${esc(valor(c.objeto))}</dd></div>
     ${campo('ID del contrato', c.id)}${campo('Referencia del contrato', c.referencia)}
@@ -332,7 +350,7 @@ export async function vistaContrato(raiz, id) {
       <h4>Alertas de ejecución</h4>${alertasHtml(ejecucion)}
       <h4>Valores y plazos reportados</h4>${financiero}
       <h4>Adiciones frente al valor inicial (tope del 50 %)</h4>${editor}
-      <h4>Modificaciones registradas</h4>${adic.error ? errorHtml(adic.error) : tablaModificaciones(adic.filas)}${fuenteChip(adic)}
+      <h4>Modificaciones registradas</h4>${adic.error ? errorHtml(adic.error) : tablaModificaciones(adic.filas, modi.filas)}${fuenteChip(adic)}${modi.error ? errorHtml(modi.error) : fuenteChip(modi)}
       <h4>Facturas y pagos</h4>${fact.error ? errorHtml(fact.error) : tablaFacturas(fact.filas)}${fuenteChip(fact)}
       <h4>Plan de ejecución y entregas</h4>${ejec.error ? errorHtml(ejec.error) : tablaEjecucion(ejec.filas)}${fuenteChip(ejec)}`)}
     ${seccion('precontractual', 'Análisis precontractual', `
@@ -340,14 +358,21 @@ export async function vistaContrato(raiz, id) {
       <h4>Checklist guiado</h4>
       ${checklist(`checklist:${c.id}`, pre, { urlExpediente: c.url, justificacion: c.justificacion || p?.justificaci_n_modalidad_de })}
       <h4>Contratos entre la entidad y el proveedor</h4>${tablaHistorial(hist, c.id)}`)}
+    ${seccion('ofertas', 'Proponentes y ofertas', pendiente('Consultando proponentes y ofertas…'))}
+    ${seccion('documentos', 'Documentos del expediente', pendiente('Consultando los documentos publicados en SECOP II…'))}
     ${seccion('proveedor', 'Proveedor', datosProveedor(prov))}
-    ${seccionFuentes([base, proc.consulta, proc.consultaFases, adic, fact, ejec, prov, hist])}
+    ${seccionFuentes([base, proc.consulta, proc.consultaFases, adic, modi, fact, ejec, prov, hist])}
     ${AVISO_LEGAL}`;
 
   activarEditorAdiciones(raiz);
   activarChecklist(raiz);
   activarComunes(raiz);
   sincronizarResumenAdiciones(raiz, autoItems);
+  // Proponentes, ofertas y documentos cargan después, para no demorar la ficha.
+  const portafolio = c.procesoCompra || p?.id_del_portafolio;
+  const anio = Number((fechasProc.publicacion || fechaISO(c.fechaFirma) || '').slice(0, 4)) || undefined;
+  cargarOfertas(raiz, { idProceso: p?.id_del_proceso, portafolio, anio, docDestacado: c.docProveedor, rotuloDestacado: 'contratista' });
+  cargarDocumentos(raiz, { portafolio, contrato: c.id, anio });
 }
 
 // El resumen de alertas incluye la regla del 50 % y se actualiza cuando el abogado digita valores.
@@ -469,12 +494,17 @@ export async function vistaProceso(raiz, id) {
       ...[...contratos.values()].map(x => ({ fecha: x.firma, titulo: `Firma del contrato ${x.id}`, detalle: fmtCOP(x.valor), fuente: 'jbjy-vk9h / rpmr-utcd' })),
     ]))}
     ${seccion('precontractual', 'Análisis precontractual', checklist(`checklist:${p.id_del_proceso}`, pre, { urlExpediente: url, justificacion: p.justificaci_n_modalidad_de }))}
+    ${seccion('ofertas', 'Proponentes y ofertas', pendiente('Consultando proponentes y ofertas…'))}
+    ${seccion('documentos', 'Documentos del expediente', pendiente('Consultando los documentos publicados en SECOP II…'))}
     ${seccion('contratos', 'Contratos derivados', tabla(['Contrato', 'Proveedor', 'Valor', 'Firma', 'Estado'],
       [...contratos.values()].map(x => [`<a href="#/contrato/${encodeURIComponent(x.id)}"><code>${esc(x.id)}</code></a>`, esc(valor(x.proveedor)), fmtCOP(x.valor), fmtFecha(x.firma), esc(valor(x.estado))])))}
     ${seccionFuentes([base, consultaFases, derivJ, derivI])}
     ${AVISO_LEGAL}`;
   activarChecklist(raiz);
   activarComunes(raiz);
+  const anio = Number((fechasProc.publicacion || '').slice(0, 4)) || undefined;
+  cargarOfertas(raiz, { idProceso: principal.id_del_proceso, portafolio: p.id_del_portafolio, anio, docDestacado: p.nit_del_proveedor_adjudicado, rotuloDestacado: 'adjudicado' });
+  cargarDocumentos(raiz, { portafolio: p.id_del_portafolio, anio });
 }
 
 // ================= SECOP I =================
@@ -562,10 +592,16 @@ export async function vistaSecop1(raiz, id) {
     ${seccion('precontractual', 'Análisis precontractual', `
       ${checklist(`checklist:${r.uid}`, pre, { urlExpediente: url, justificacion: r.causal_de_otras_formas_de })}
       <h4>Contratos entre la entidad y el proveedor</h4>${tablaHistorial(hist, r.numero_de_constancia)}`)}
+    ${seccion('ofertas', 'Proponentes', pendiente('Consultando los proponentes en SECOP I…'))}
+    ${seccion('documentos', 'Documentos del expediente', pendiente('Consultando los documentos publicados en SECOP I…'))}
     ${seccionFuentes([base, hist])}
     ${AVISO_LEGAL}`;
   activarEditorAdiciones(raiz);
   activarChecklist(raiz);
   activarComunes(raiz);
   sincronizarResumenAdiciones(raiz, [{ id: 'plazoOfertas', ...pre.plazoOfertas }, pre.directaRepetida && { id: 'directaRepetida', ...pre.directaRepetida }, ...ejecucion]);
+  if (r.numero_de_constancia) {
+    cargarProponentesSecop1(raiz, r.numero_de_constancia, r.identificacion_del_contratista);
+    cargarDocumentosSecop1(raiz, r.numero_de_constancia);
+  }
 }

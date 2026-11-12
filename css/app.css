@@ -256,6 +256,13 @@ td { font-variant-numeric: tabular-nums; }
 .check-estado.e-no_cumple { color: var(--alta); border-color: currentColor; }
 .check-estado.e-no_aplica { color: var(--info); border-color: currentColor; }
 .conteo-mods { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Documentos del expediente: las mismas columnas en todos los grupos */
+#documentos table { table-layout: fixed; min-width: 620px; }
+#documentos td { overflow-wrap: anywhere; }
+#documentos th:first-child { width: 104px; }
+#documentos th:last-child { width: 92px; }
+#documentos th:nth-last-child(2) { width: 68px; }
+#documentos th:nth-last-child(3):not(:nth-child(2)) { width: 150px; }
 
 /* Ayudas */
 .ayuda { padding: 12px 0; border-top: 1px solid var(--borde); }

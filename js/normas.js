@@ -8,7 +8,7 @@ export const REGLAS = [
     norma: 'Ley 80 de 1993, art. 40, parágrafo',
     texto: 'Los contratos no pueden adicionarse en más del 50 % de su valor inicial, expresado en salarios mínimos legales mensuales (SMMLV).',
     umbral: 'Alerta alta si las adiciones superan el 50 % del valor inicial. Aviso si están entre 40 % y 50 %. El valor inicial se convierte con el SMMLV del año de firma y cada adición con el SMMLV del año en que se hizo.',
-    limites: 'Aplica a entidades sometidas al Estatuto General de Contratación. No aplica a entidades de régimen especial (por ejemplo, empresas de servicios públicos o universidades públicas, según su régimen). En SECOP II, el conjunto de Adiciones no publica el valor de cada adición: hay que tomarlo del documento de modificación.',
+    limites: 'Aplica a entidades sometidas al Estatuto General de Contratación. No aplica a entidades de régimen especial (por ejemplo, empresas de servicios públicos o universidades públicas, según su régimen). En SECOP II no se publica el valor de cada adición: la app lo calcula como la diferencia entre el valor total del contrato antes y después de cada modificación publicada (conjunto Modificaciones a contratos). Verifícalo siempre contra el documento de la modificación.',
   },
   {
     id: 'plazoOfertas',

@@ -2,7 +2,7 @@
 
 import {
   evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida, claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento,
-  evaluarInicioAntesDeFirma, evaluarProrrogas, evaluarLiquidacion, evaluarPagos,
+  evaluarInicioAntesDeFirma, evaluarProrrogas, evaluarLiquidacion, evaluarPagos, adicionesDesdeModificaciones, claseDocumento,
 } from '../js/reglas.js';
 import { festivos, diasHabilesEntre } from '../js/festivos.js';
 import { aCsv } from '../js/util.js';
@@ -199,6 +199,50 @@ export const CASOS = [
     iguales(evaluarPagos({ valorContrato: 100e6, valorPagado: 100e6 }).nivel, 'ok');
     iguales(evaluarPagos({ valorContrato: 100e6, valorPagado: 0 }).nivel, 'ok');
     iguales(evaluarPagos({ valorContrato: 100e6 }).nivel, 'sin_datos');
+  }],
+
+  // ----- Adiciones calculadas con "Modificaciones a contratos" (caso real CO1.PCCNTR.8934192)
+  ['Modificaciones: la adición es la diferencia con el valor anterior; las canceladas no cuentan', () => {
+    const r = adicionesDesdeModificaciones([
+      { id: 'CO1.CTRMOD.24462141', fecha: '2026-09-15T21:41:21', valor: 65984344, estado: 'Cancelado' },
+      { id: 'CO1.CTRMOD.24462155', fecha: '2026-09-16T21:13:15', valor: 94027690, estado: 'Publicado', proposito: 'PRORROGA Y ADICION No. 1' },
+    ], 65984344);
+    iguales(r.adiciones.length, 1); iguales(r.adiciones[0].valor, 28043346); iguales(r.adiciones[0].fecha, '2026-09-16');
+    iguales(r.adiciones[0].valorTras, 94027690); iguales(r.sinBase, false);
+  }],
+  ['Modificaciones: una prórroga o un cierre repiten el valor y no son adición; una reducción baja la base', () => {
+    const r = adicionesDesdeModificaciones([
+      { id: 'a', fecha: '2026-03-01', valor: 22e6, estado: 'Publicado' },
+      { id: 'b', fecha: '2026-05-01', valor: 20e6, estado: 'Publicado' },
+      { id: 'c', fecha: '2026-07-01', valor: 25e6, estado: 'Publicado' },
+      { id: 'd', fecha: '2026-08-01', valor: 1, estado: 'Publicado' },
+    ], 22e6);
+    iguales(r.adiciones.map(a => [a.id, a.valor]), [['c', 5e6]]);
+  }],
+  ['Modificaciones: sin valor inicial no se inventa la primera adición y se avisa', () => {
+    const r = adicionesDesdeModificaciones([
+      { id: 'a', fecha: '2026-03-01', valor: 30e6, estado: 'Publicado' },
+      { id: 'b', fecha: '2026-06-01', valor: 40e6, estado: 'Publicado' },
+    ], null);
+    iguales(r.sinBase, true); iguales(r.adiciones.map(a => a.valor), [10e6]);
+    iguales(adicionesDesdeModificaciones([], null), { adiciones: [], sinBase: false });
+  }],
+
+  // ----- Clase de los documentos del expediente (nombres reales de SECOP I y II)
+  ['Documentos: se agrupan por clase según el nombre; "contrato" no gana a una clase más precisa', () => {
+    const casos = {
+      'ESTUDIOS PREVIOS CONTRATO 076-2020': 'planeacion', 'SOLICITUD Y CDP.pdf': 'planeacion', 'ANALISIS DEL SECTOR.pdf': 'planeacion',
+      'CARTA DE INVITACION.pdf': 'pliegos', 'AVISO DE CONVOCATORIA VERSION FINAL FIRMADO.pdf': 'pliegos',
+      '3. OFRECIMIENTO ECONOMICO.pdf': 'ofertas', 'EVALUACIÒN.pdf': 'ofertas', 'ACTA DE CIERRE': 'ofertas',
+      'CONTRATO 076-2020': 'contrato', 'CO1_PCCNTR_9041177_Firmado.pdf': 'contrato', 'ANEXO DE CONDICIONES CONTRACTUALES PS AG.pdf': 'contrato',
+      'Poliza de cumplimiento - Sop.pdf': 'garantias', 'RP CONTRATO 076-2020': 'garantias', 'RP2026000068.pdf': 'garantias',
+      'ACTA DE INICIO CTTO CDIH061-2026.pdf': 'supervision', 'INFORME DE SUPERVISION Y CERT CUMPLIMIENTO 01.pdf': 'supervision',
+      'cuenta de cobro no. 01 CDIH061-2026.pdf': 'pagos', 'SEGURIDAD SOCIAL - HOLMES ARTEAGA.pdf': 'pagos',
+      'ACTA JUSTIFICACION 1 ADICIONAL Y PRORROGA CDIH061-2026.pdf': 'modificaciones',
+      'ACTA TERMINACION CONTRATO 076-2020': 'liquidacion', 'ACTA DE LIQUIDACION': 'liquidacion',
+      '2026000186.pdf': 'otros', 'REQUISITOS MINIMOS DE CONTRATACION DIRECTA.pdf': 'otros', '': 'otros',
+    };
+    for (const [nombre, clase] of Object.entries(casos)) iguales(claseDocumento(nombre), clase, nombre + ':');
   }],
 
   // ----- Exportación a CSV

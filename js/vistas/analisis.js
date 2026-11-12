@@ -209,12 +209,19 @@ export function tablaFacturas(filas) {
     filas.map(f => [esc(valor(f.numero_de_factura)), fmtFecha(f.fecha_factura), fmtCOP(f.valor_total), fmtCOP(f.valor_a_pagar), esc(valor(f.estado)), f.pago_confirmado === undefined ? NR : (f.pago_confirmado ? 'Sí' : 'No')]));
 }
 
-export function tablaModificaciones(filas) {
+// filas: "Adiciones" (cb9c-h8sn), que trae el tipo. detalle: "Modificaciones a contratos" (u8cx-r425), que agrega el estado,
+// el valor total del contrato después de la modificación y los días extendidos acumulados.
+export function tablaModificaciones(filas, detalle = []) {
+  const porId = new Map(detalle.map(m => [m.identificador_modificacion, m]));
   const conteo = {};
   filas.forEach(f => { conteo[f.tipo || NR] = (conteo[f.tipo || NR] || 0) + 1; });
   const resumen = filas.length ? `<p class="conteo-mods">${Object.entries(conteo).map(([t, n]) => `<span class="etiqueta">${esc(t)}: ${n}</span>`).join(' ')}</p>` : '';
-  return resumen + tabla(['Fecha de registro', 'Tipo', 'Descripción', 'Identificador'],
-    filas.map(f => [fmtFecha(f.fecharegistro), esc(valor(f.tipo)), esc(valor(f.descripcion)), `<code>${esc(valor(f.identificador))}</code>`]));
+  return resumen + tabla(['Fecha de registro', 'Tipo', 'Descripción', 'Estado', 'Valor del contrato tras la modificación', 'Días extendidos (acumulado)', 'Identificador'],
+    filas.map(f => {
+      const m = porId.get(f.identificador) || {};
+      return [fmtFecha(f.fecharegistro), esc(valor(f.tipo)), esc(valor(f.descripcion)), esc(valor(m.estado_modificacion)),
+        fmtCOP(m.valor_modificacion), fmtNum(m.dias_extendidos), `<code>${esc(valor(f.identificador))}</code>`];
+    }));
 }
 
 export function tablaEjecucion(filas) {

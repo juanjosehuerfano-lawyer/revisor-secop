@@ -219,3 +219,55 @@ export function evaluarPagos({ valorContrato, valorPagado }) {
   // Más de un peso de diferencia, para no alertar por redondeos.
   return { nivel: p > v + 1 ? 'alta' : 'ok', exceso: Math.max(0, p - v), pct: (p / v) * 100 };
 }
+
+/**
+ * Adiciones en valor a partir de "SECOP II – Modificaciones a contratos" (u8cx-r425). Ese conjunto no trae el valor de cada
+ * adición, sino el valor total del contrato después de cada modificación: la adición es la diferencia con el valor anterior.
+ * mods: [{ id, fecha, valor, estado, proposito }]. Solo cuentan las modificaciones publicadas con valor real (≥ $10.000).
+ * Sin valor inicial, la primera modificación solo sirve de base: `sinBase` avisa que esa adición no se pudo calcular.
+ */
+export function adicionesDesdeModificaciones(mods, valorInicial) {
+  const inicial = Number(valorInicial);
+  let previo = Number.isFinite(inicial) && inicial > 0 ? inicial : null;
+  const publicadas = mods
+    .filter(m => /^publicad/i.test(m.estado || '') && m.fecha && Number(m.valor) >= 10000)
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  const sinBase = previo === null && publicadas.length > 0;
+  const adiciones = [];
+  for (const m of publicadas) {
+    const v = Number(m.valor);
+    if (previo !== null && v > previo) adiciones.push({ id: m.id, fecha: String(m.fecha).slice(0, 10), valor: v - previo, valorTras: v, proposito: m.proposito });
+    previo = v;
+  }
+  return { adiciones, sinBase };
+}
+
+// Clases de documentos del expediente, en el orden en que se presentan.
+export const CLASES_DOCUMENTO = {
+  planeacion: 'Planeación y estudios previos', pliegos: 'Invitación, pliegos y avisos', ofertas: 'Ofertas y evaluación',
+  contrato: 'Contrato', garantias: 'Garantías y registro presupuestal', supervision: 'Inicio y supervisión', pagos: 'Pagos',
+  modificaciones: 'Modificaciones', liquidacion: 'Terminación y liquidación', otros: 'Otros documentos',
+};
+
+// Orden de precedencia: gana la primera que coincide. "Contrato" va al final porque casi todo nombre lo menciona
+// ("CDP CONTRATO 076-2020", "ACTA TERMINACION CONTRATO…").
+const PATRONES_DOCUMENTO = [
+  ['liquidacion', /liquidaci|terminaci|recibo (final|a satisfaccion)|paz y salvo/],
+  ['modificaciones', /adici|prorrog|otro ?si\b|modificaci|modificatori|suspensi|reinici|cesion/],
+  ['pagos', /cuenta de cobro|factura|\bpagos?\b|seguridad social|planilla|egreso|comprobante/],
+  ['garantias', /poliza|garantia|\bcrp\b|\brp(\b|\d)|registro presupuestal|\barl\b/],
+  ['supervision', /acta (de )?inicio|supervis|inf(orme)?( de)? actividades|interventor|cumplimiento/],
+  ['ofertas', /oferta|propuesta|ofrecimiento|evaluaci|manifestacion de interes|idoneidad|habilitante|capacidad juridica|documentos del proveedor|hoja de vida|acta de cierre|experiencia/],
+  ['pliegos', /pliego|invitacion|aviso|convocatoria|adenda|cronograma|observaci/],
+  ['planeacion', /estudios? previos?|analisis del sector|necesidad|\bcdp(\b|\d)|disponibilidad|viabilidad|riesgo|plan anual|ficha tecnica|solicitud|justificaci|comite/],
+  ['contrato', /\bcontrato\b|convenio|minuta|clausulado|adjudicaci|aceptacion|condiciones contractuales|firmado|co1_pccntr|orden de (compra|servicio)/],
+];
+
+/**
+ * Clase aproximada de un documento según su nombre o descripción. Es una ayuda para ordenar el expediente,
+ * no una calificación jurídica: lo que no se reconoce queda en "otros".
+ */
+export function claseDocumento(texto) {
+  const t = normalizar(texto);
+  return (PATRONES_DOCUMENTO.find(([, patron]) => patron.test(t)) || ['otros'])[0];
+}
