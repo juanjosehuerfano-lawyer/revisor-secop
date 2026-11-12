@@ -21,6 +21,8 @@ export function claseModalidad(texto) {
 const COMPETITIVAS = new Set(['licitacion', 'seleccion_abreviada', 'concurso', 'minima']);
 
 function anio(iso) { return iso ? Number(String(iso).slice(0, 4)) : null; }
+// Número de día (UTC) de una fecha ISO; sirve para restar fechas sin horas ni zonas.
+const dia = iso => Date.parse(String(iso).slice(0, 10) + 'T00:00:00Z') / 86400000;
 
 /**
  * Ley 80 de 1993, art. 40, parágrafo: los contratos no pueden adicionarse en más del 50 % de su valor inicial,
@@ -134,7 +136,6 @@ export function evaluarFraccionamiento(contratos, { tope, ventanaDias = 30 } = {
     if (!porProveedor.has(c.proveedor)) porProveedor.set(c.proveedor, []);
     porProveedor.get(c.proveedor).push({ ...c, valor: v });
   }
-  const dia = f => Date.parse(f + 'T00:00:00Z') / 86400000;
   const grupos = [];
   for (const [proveedor, lista] of porProveedor) {
     lista.sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -150,4 +151,71 @@ export function evaluarFraccionamiento(contratos, { tope, ventanaDias = 30 } = {
   }
   grupos.sort((a, b) => b.suma - a.suma);
   return { nivel: grupos.length ? 'media' : 'ok', grupos, tope: t, ventanaDias };
+}
+
+const vacio = v => v === null || v === undefined || v === '';
+
+function sumarMeses(iso, meses) {
+  const d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() + meses);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Ley 80 de 1993, art. 41: el contrato se perfecciona al elevarse a escrito y su ejecución exige registro presupuestal
+ * y garantía aprobada. Indicio si SECOP reporta el inicio de ejecución en un día anterior al de la firma.
+ */
+export function evaluarInicioAntesDeFirma({ fechaFirma, fechaInicio }) {
+  if (!fechaFirma || !fechaInicio) return { nivel: 'sin_datos', motivo: 'SECOP no reporta la fecha de firma o la de inicio de ejecución.' };
+  const dias = dia(fechaFirma) - dia(fechaInicio);
+  return { nivel: dias > 0 ? 'media' : 'ok', dias: Math.max(0, dias) };
+}
+
+/**
+ * Prórrogas: la ley no pone tope al tiempo adicionado (solo al valor), pero una prórroga grande frente al plazo
+ * inicial es un indicio de falta de planeación. Se asume que la fecha de fin ya incluye los días adicionados
+ * (verificado con muestras de jbjy-vk9h), así que plazo inicial = fin − inicio − días adicionados.
+ */
+export function evaluarProrrogas({ fechaInicio, fechaFin, diasAdicionados }, { umbralPct = 50 } = {}) {
+  const ad = Number(diasAdicionados);
+  if (vacio(diasAdicionados) || !Number.isFinite(ad)) return { nivel: 'sin_datos', motivo: 'SECOP no reporta los días adicionados al contrato.' };
+  if (ad <= 0) return { nivel: 'info', diasAdicionados: 0, motivo: 'SECOP no reporta días adicionados al plazo.' };
+  if (!fechaInicio || !fechaFin) return { nivel: 'sin_datos', diasAdicionados: ad, motivo: 'SECOP no reporta las fechas de inicio y de fin para calcular el plazo inicial.' };
+  const plazoInicial = dia(fechaFin) - dia(fechaInicio) - ad;
+  if (plazoInicial <= 0) return { nivel: 'sin_datos', diasAdicionados: ad, motivo: 'Las fechas reportadas no permiten calcular el plazo inicial.' };
+  const pct = (ad / plazoInicial) * 100;
+  return { nivel: pct >= umbralPct ? 'media' : 'ok', diasAdicionados: ad, plazoInicial, pct };
+}
+
+/**
+ * Liquidación (Ley 1150 de 2007, art. 11): de común acuerdo en el plazo pactado o, si no hay, en 4 meses desde la
+ * terminación; unilateral en los 2 meses siguientes; después, aún puede hacerse dentro de los 2 años siguientes.
+ * requiere: true / false / undefined (SECOP no lo dice). fechaLimitePactada: fin del periodo de liquidación que reporta SECOP.
+ * Para no dar falsas alertas, el plazo bilateral es el mayor entre el pactado y los 4 meses.
+ */
+export function evaluarLiquidacion({ requiere, estado, fechaFin, fechaLimitePactada, fechaLiquidacion, hoy }) {
+  const e = normalizar(estado);
+  const sinLiquidar = e.includes('sin liquidar');
+  if (fechaLiquidacion || (/cerrado|liquidado/.test(e) && !sinLiquidar)) return { nivel: 'ok', motivo: 'SECOP reporta el contrato como cerrado o liquidado.' };
+  if (requiere === false) return { nivel: 'info', motivo: 'SECOP reporta que el contrato no requiere liquidación.' };
+  if (requiere === undefined && !sinLiquidar) return { nivel: 'sin_datos', motivo: 'SECOP no reporta si el contrato requiere liquidación.' };
+  if (!fechaFin || !hoy) return { nivel: 'sin_datos', motivo: 'SECOP no reporta la fecha de terminación del contrato.' };
+  if (dia(hoy) <= dia(fechaFin)) return { nivel: 'info', motivo: 'El plazo del contrato no ha terminado.' };
+  const cuatroMeses = sumarMeses(fechaFin, 4);
+  const pactada = fechaLimitePactada ? String(fechaLimitePactada).slice(0, 10) : null;
+  const limiteBilateral = pactada && pactada > cuatroMeses ? pactada : cuatroMeses;
+  const limiteFinal = sumarMeses(limiteBilateral, 26); // 2 meses de liquidación unilateral + 2 años
+  const h = String(hoy).slice(0, 10);
+  const nivel = h <= limiteBilateral ? 'ok' : h <= limiteFinal ? 'media' : 'alta';
+  return { nivel, limiteBilateral, limiteFinal, diasDesdeFin: dia(hoy) - dia(fechaFin) };
+}
+
+/** Pagos por encima del valor del contrato: no tienen respaldo contractual ni presupuestal (Ley 80 de 1993, art. 41). */
+export function evaluarPagos({ valorContrato, valorPagado }) {
+  const v = Number(valorContrato), p = Number(valorPagado);
+  if (vacio(valorContrato) || vacio(valorPagado) || !Number.isFinite(v) || !Number.isFinite(p) || v <= 0) {
+    return { nivel: 'sin_datos', motivo: 'SECOP no reporta el valor del contrato o el valor pagado.' };
+  }
+  // Más de un peso de diferencia, para no alertar por redondeos.
+  return { nivel: p > v + 1 ? 'alta' : 'ok', exceso: Math.max(0, p - v), pct: (p / v) * 100 };
 }

@@ -1,6 +1,6 @@
 // Pestaña Reglas (validación jurídica de cada regla) y Ajustes (token y caché).
 
-import { esc, almacen, fmtCOP, fmtFecha } from '../util.js';
+import { esc, almacen, fmtCOP, fmtFecha, descargar } from '../util.js';
 import { REGLAS } from '../normas.js';
 import { SMMLV } from '../smmlv.js';
 import { limpiarCache } from '../api.js';
@@ -47,6 +47,28 @@ export function vistaReglas(raiz) {
   });
 }
 
+// Lo que el abogado escribe en la app. El token y la caché no entran en la copia de seguridad.
+const CLAVES_RESPALDO = /^(casos$|validaciones$|checklist:|adiciones:|fracc:)/;
+
+function crearRespaldo() {
+  const datos = {};
+  try {
+    Object.keys(localStorage).filter(k => CLAVES_RESPALDO.test(k)).forEach(k => { datos[k] = almacen.leer(k); });
+  } catch { /* sin almacenamiento: la copia sale vacía */ }
+  return { app: 'revisor-secop', version: 1, fecha: new Date().toISOString(), datos };
+}
+
+// Restaura solo claves conocidas de un archivo creado por esta app. Devuelve cuántas guardó.
+function restaurarRespaldo(texto) {
+  let r;
+  try { r = JSON.parse(texto); } catch { throw new Error('El archivo no es una copia de seguridad válida.'); }
+  if (r?.app !== 'revisor-secop' || typeof r.datos !== 'object' || r.datos === null) throw new Error('El archivo no es una copia de seguridad de Revisor SECOP.');
+  const claves = Object.keys(r.datos).filter(k => CLAVES_RESPALDO.test(k));
+  if (!claves.length) throw new Error('La copia de seguridad está vacía.');
+  if (!confirm(`Se restaurarán ${claves.length} elemento(s). Reemplazan los datos guardados con el mismo nombre (por ejemplo, tu lista de casos). ¿Continuar?`)) return 0;
+  return claves.filter(k => almacen.guardar(k, r.datos[k])).length;
+}
+
 export function vistaAjustes(raiz) {
   const aj = almacen.leer('ajustes', {});
   raiz.innerHTML = `
@@ -64,13 +86,36 @@ export function vistaAjustes(raiz) {
       <p id="msg-cache" class="ayuda-campo" aria-live="polite"></p>
     </section>
     <section class="tarjeta"><h3>Datos guardados en este navegador</h3>
-      <p>Las validaciones de reglas, los checklists y los valores de adiciones que digitas se guardan solo aquí. No salen de tu equipo.</p>
+      <p>Tus casos y notas, las validaciones de reglas, los checklists, los valores de adiciones y los topes de fraccionamiento se guardan solo aquí. No salen de tu equipo.
+        Si borras los datos del navegador o cambias de dispositivo, se pierden: descarga una copia de seguridad y restáurala cuando la necesites.</p>
+      <div class="acciones">
+        <button type="button" id="respaldar">Descargar copia de seguridad</button>
+        <label class="boton secundario">Restaurar una copia<input type="file" id="restaurar" accept="application/json,.json" class="sr"></label>
+      </div>
+      <p id="msg-respaldo" class="ayuda-campo" aria-live="polite">La copia no incluye el token ni la caché de consultas.</p>
       <p class="ayuda-campo">Última revisión de esquemas de la API: ${fmtFecha('2026-10-25')}.</p>
     </section>`;
   raiz.querySelector('#form-ajustes').addEventListener('submit', ev => {
     ev.preventDefault();
     almacen.guardar('ajustes', { ...aj, token: ev.target.token.value.trim() });
     ev.target.querySelector('button').textContent = 'Guardado';
+  });
+  const msg = raiz.querySelector('#msg-respaldo');
+  raiz.querySelector('#respaldar').addEventListener('click', () => {
+    const r = crearRespaldo();
+    descargar(`revisor-secop-copia-${r.fecha.slice(0, 10)}.json`, JSON.stringify(r, null, 1), 'application/json');
+    msg.textContent = `Copia descargada con ${Object.keys(r.datos).length} elemento(s).`;
+  });
+  raiz.querySelector('#restaurar').addEventListener('change', async ev => {
+    const archivo = ev.target.files[0];
+    if (!archivo) return;
+    try {
+      const n = restaurarRespaldo(await archivo.text());
+      msg.textContent = n ? `Se restauraron ${n} elemento(s).` : 'No se restauró nada.';
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+    ev.target.value = '';
   });
   raiz.querySelector('#limpiar').addEventListener('click', () => {
     limpiarCache();

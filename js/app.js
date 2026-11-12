@@ -5,6 +5,7 @@ import { vistaContrato, vistaProceso, vistaSecop1 } from './vistas/ficha.js';
 import { vistaAyudas } from './vistas/ayudas.js';
 import { vistaReglas, vistaAjustes } from './vistas/reglas.js';
 import { vistaVeeduria, vistaEntidad, vistaProveedor } from './vistas/veeduria.js';
+import { vistaCasos } from './vistas/casos.js';
 
 const RUTAS = [
   [/^\/veeduria$/, (r, m, q) => vistaVeeduria(r, q), 'veeduria'],
@@ -13,6 +14,7 @@ const RUTAS = [
   [/^\/contrato\/(.+)$/, (r, m) => vistaContrato(r, decodeURIComponent(m[1])), 'buscar'],
   [/^\/proceso\/(.+)$/, (r, m) => vistaProceso(r, decodeURIComponent(m[1])), 'buscar'],
   [/^\/secop1\/(.+)$/, (r, m) => vistaSecop1(r, decodeURIComponent(m[1])), 'buscar'],
+  [/^\/casos$/, r => vistaCasos(r), 'casos'],
   [/^\/ayudas$/, r => vistaAyudas(r), 'ayudas'],
   [/^\/reglas$/, r => vistaReglas(r), 'reglas'],
   [/^\/ajustes$/, r => vistaAjustes(r), 'ajustes'],

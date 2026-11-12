@@ -101,3 +101,23 @@ export const almacen = {
 export function normalizar(s) {
   return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
+
+// CSV para Excel en español: separador ';', decimales con coma y BOM para las tildes.
+// Las celdas de texto que empiezan por = + - @ llevan un apóstrofo delante para que Excel no las ejecute como fórmula.
+export function aCsv(columnas, filas) {
+  const celda = v => {
+    if (v === null || v === undefined) return '';
+    let s = typeof v === 'number' ? String(v).replace('.', ',') : String(v);
+    if (typeof v !== 'number' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return '\uFEFF' + [columnas, ...filas].map(f => f.map(celda).join(';')).join('\r\n');
+}
+
+export function descargar(nombre, texto, tipo = 'text/csv;charset=utf-8') {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
+  a.download = nombre;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}

@@ -6,7 +6,9 @@ import { cargando, errorHtml, seccion, tabla } from './comun.js';
 import {
   lineaDeTiempo, editorAdiciones, activarEditorAdiciones, evaluarPrecontractual,
   checklist, activarChecklist, resumenAlertas, tablaFacturas, tablaModificaciones, tablaEjecucion, detalleAdiciones,
+  evaluarEjecucion, alertasHtml,
 } from './analisis.js';
+import { botonSeguir, activarSeguir } from './casos.js';
 import { evaluarAdiciones } from '../reglas.js';
 import { documentoBase } from './veeduria.js';
 
@@ -58,7 +60,7 @@ function historialParaRegla(h) {
   return h && !h.error ? h.filas.map(r => ({ fecha: String(r.fecha_de_firma_del_contrato || '').slice(0, 10), modalidad: r.modalidad_de_contrataci_n })) : undefined;
 }
 
-function encabezado({ etiqueta, titulo, entidad, proveedor, url, extra = '' }) {
+function encabezado({ etiqueta, titulo, entidad, proveedor, url, extra = '', ruta }) {
   return `<header class="ficha-encabezado tarjeta">
     <p class="migas"><a href="#/buscar">← Volver a buscar</a></p>
     <p class="etiqueta">${esc(etiqueta)}</p>
@@ -68,6 +70,7 @@ function encabezado({ etiqueta, titulo, entidad, proveedor, url, extra = '' }) {
     <div class="acciones no-imprimir">
       ${url ? `<a class="boton" href="${esc(url)}" target="_blank" rel="noopener">Ver en SECOP</a>` : `<span class="nr">Enlace al SECOP: ${NR}</span>`}
       <button type="button" class="secundario" data-accion="imprimir">Exportar a PDF</button>
+      ${botonSeguir({ ruta, tipo: etiqueta, titulo: valor(titulo).slice(0, 200), detalle: [entidad, proveedor].filter(Boolean).join(' · ') })}
     </div>
     <p class="solo-imprimir">Ficha generada el ${esc(fmtFechaHora(new Date()))} con Revisor SECOP. Las fuentes y las horas de consulta están al final del documento.</p>
   </header>`;
@@ -87,6 +90,7 @@ function seccionFuentes(consultas) {
 }
 
 function activarComunes(raiz) {
+  activarSeguir(raiz);
   raiz.querySelectorAll('[data-accion=imprimir]').forEach(b => b.addEventListener('click', () => {
     raiz.querySelectorAll('details').forEach(d => { d.dataset.abierto = d.open; d.open = true; });
     window.print();
@@ -107,7 +111,8 @@ function desdeContratos(r) {
     tipoDocProveedor: r.tipodocproveedor, supervisor: r.nombre_supervisor, ordenador: r.nombre_ordenador_del_gasto,
     origenRecursos: r.origen_de_los_recursos, destinoGasto: r.destino_gasto, valorFacturado: r.valor_facturado, valorPagado: r.valor_pagado,
     valorPendientePago: r.valor_pendiente_de_pago, valorPendienteEjecucion: r.valor_pendiente_de_ejecucion, pagoAdelantado: r.valor_de_pago_adelantado,
-    liquidacion: r.liquidaci_n, fechaLiquidacion: r.fecha_inicio_liquidacion, url: urlDe(r.urlproceso), procesoCompra: r.proceso_de_compra,
+    liquidacion: r.liquidaci_n, fechaLiquidacion: r.fecha_inicio_liquidacion, fechaLimiteLiquidacion: r.fecha_fin_liquidacion,
+    url: urlDe(r.urlproceso), procesoCompra: r.proceso_de_compra,
     ultimaActualizacion: r.ultima_actualizacion,
   };
 }
@@ -250,7 +255,8 @@ export async function vistaContrato(raiz, id) {
     ${campo('Estado', c.estado)}${campo('Valor del contrato', c.valor, fmtCOP)}${campo('Fecha de firma', c.fechaFirma, fmtFecha)}
     ${campo('Inicio', c.fechaInicio, fmtFecha)}${campo('Fin', c.fechaFin, fmtFecha)}${campo('Duración', c.duracion)}
     ${campo('Supervisor', c.supervisor)}${campo('Ordenador del gasto', c.ordenador)}${campo('Origen de los recursos', c.origenRecursos)}
-    ${campo('Destino del gasto', c.destinoGasto)}${campo('Liquidación', c.liquidacion)}${campo('Última actualización en SECOP', c.ultimaActualizacion, fmtFecha)}
+    ${campo('Destino del gasto', c.destinoGasto)}${campo('¿Requiere liquidación?', c.liquidacion)}${campo('Periodo de liquidación hasta', c.fechaLimiteLiquidacion, fmtFecha)}
+    ${campo('Última actualización en SECOP', c.ultimaActualizacion, fmtFecha)}
   </dl>`;
 
   const eventos = [
@@ -283,18 +289,25 @@ export async function vistaContrato(raiz, id) {
     </dl>${tablaFases(proc.fases)}<p><a href="#/proceso/${encodeURIComponent(p.id_del_proceso)}">Abrir la ficha del proceso</a></p>`
     : `<p class="nr">No se encontró el proceso en ${esc('SECOP II – Procesos')}${proc.consulta ? '' : ': el contrato no trae el identificador del proceso ni la referencia con NIT'}.</p>`;
 
+  // fechaLiquidacion del contrato es el inicio previsto del periodo de liquidación, no la liquidación: no se pasa a la regla.
+  const ejecucion = evaluarEjecucion({
+    fechaFirma: c.fechaFirma, fechaInicio: c.fechaInicio, fechaFin: c.fechaFin, diasAdicionados: c.diasAdicionados,
+    valor: c.valor, valorPagado: c.valorPagado, estado: c.estado, fechaLimiteLiquidacion: c.fechaLimiteLiquidacion,
+    requiereLiquidacion: c.liquidacion === undefined ? undefined : /^s/i.test(c.liquidacion),
+  });
   const autoItems = [
     { id: 'plazoOfertas', ...pre.plazoOfertas }, { id: 'proponenteUnico', ...pre.proponenteUnico },
-    pre.directaRepetida && { id: 'directaRepetida', ...pre.directaRepetida },
+    pre.directaRepetida && { id: 'directaRepetida', ...pre.directaRepetida }, ...ejecucion,
   ];
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Contrato · SECOP II', titulo: c.objeto, entidad: c.entidad, proveedor: c.proveedor, url: c.url, extra: enlacesVeeduria(c.nitEntidad, c.docProveedor) })}
-    ${deIntegrado ? `<div class="aviso">La API del conjunto <em>SECOP II – Contratos Electrónicos</em> (jbjy-vk9h) no devolvió este contrato. Hoy solo expone una parte de los registros. Los datos básicos vienen de <em>SECOP Integrado</em> (rpmr-utcd), que no publica supervisor, pagos ni días adicionados: esos campos aparecen como "${NR}".</div>` : ''}
+    ${encabezado({ etiqueta: 'Contrato · SECOP II', titulo: c.objeto, entidad: c.entidad, proveedor: c.proveedor, url: c.url, extra: enlacesVeeduria(c.nitEntidad, c.docProveedor), ruta: `#/contrato/${encodeURIComponent(c.id)}` })}
+    ${deIntegrado ? `<div class="aviso">El conjunto <em>SECOP II – Contratos Electrónicos</em> (jbjy-vk9h) no devolvió este contrato. Los datos básicos vienen de <em>SECOP Integrado</em> (rpmr-utcd), que no publica supervisor, pagos, liquidación ni días adicionados: esos campos aparecen como "${NR}" y sus alertas quedan sin datos.</div>` : ''}
     ${seccion('alertas', 'Resumen de alertas', `<div id="resumen-alertas">${resumenAlertas(autoItems)}</div>`)}
     ${seccion('datos', 'Datos clave del contrato', datosClave, fuenteChip(base))}
     ${seccion('tiempo', 'Línea de tiempo', lineaDeTiempo(eventos))}
     ${seccion('ejecucion', 'Análisis de ejecución', `
+      <h4>Alertas de ejecución</h4>${alertasHtml(ejecucion)}
       <h4>Valores y plazos reportados</h4>${financiero}
       <h4>Adiciones frente al valor inicial (tope del 50 %)</h4>${editor}
       <h4>Modificaciones registradas</h4>${adic.error ? errorHtml(adic.error) : tablaModificaciones(adic.filas)}${fuenteChip(adic)}
@@ -396,7 +409,7 @@ export async function vistaProceso(raiz, id) {
   const lotes = base.filas.length > 1 && !/BDOS/i.test(id) ? `<p class="aviso">SECOP devuelve ${base.filas.length} registros para este identificador (por ejemplo, por lotes). Se muestra ${p.adjudicado === 'Si' ? 'el adjudicado' : 'el primero'}.</p>` : '';
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Proceso · SECOP II', titulo: p.nombre_del_procedimiento, entidad: p.entidad, url, extra: enlacesVeeduria(p.nit_entidad, p.nit_del_proveedor_adjudicado) })}
+    ${encabezado({ etiqueta: 'Proceso · SECOP II', titulo: p.nombre_del_procedimiento, entidad: p.entidad, url, extra: enlacesVeeduria(p.nit_entidad, p.nit_del_proveedor_adjudicado), ruta: `#/proceso/${encodeURIComponent(p.id_del_proceso)}` })}
     ${lotes}
     ${seccion('alertas', 'Resumen de alertas', resumenAlertas([{ id: 'plazoOfertas', ...pre.plazoOfertas }, { id: 'proponenteUnico', ...pre.proponenteUnico }]))}
     ${seccion('datos', 'Datos clave del proceso', `<dl class="grilla-datos">
@@ -454,6 +467,11 @@ export async function vistaSecop1(raiz, id) {
   const pre = evaluarPrecontractual({
     modalidad: r.modalidad_de_contratacion, numeroOferentes: undefined, historial: historialParaRegla(hist), fechaFirma: r.fecha_de_firma_del_contrato,
   });
+  // SECOP I no publica pagos ni días adicionados comparables: esas dos reglas se omiten.
+  const ejecucion = evaluarEjecucion({
+    fechaFirma: r.fecha_de_firma_del_contrato, fechaInicio: r.fecha_ini_ejec_contrato, fechaFin: r.fecha_fin_ejec_contrato,
+    estado: r.estado_del_proceso, fechaLiquidacion: r.fecha_liquidacion,
+  }, { omitir: ['prorrogas', 'pagosExceso'] });
   const totalAdic = num(r.valor_total_de_adiciones);
   const editor = editorAdiciones({
     clave: `adiciones:${r.uid}`, fechaInicial: r.fecha_de_firma_del_contrato,
@@ -464,7 +482,7 @@ export async function vistaSecop1(raiz, id) {
   });
 
   raiz.innerHTML = `
-    ${encabezado({ etiqueta: 'Contrato · SECOP I', titulo: r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad, proveedor: r.nom_razon_social_contratista, url, extra: enlacesVeeduria(r.nit_de_la_entidad, r.identificacion_del_contratista) })}
+    ${encabezado({ etiqueta: 'Contrato · SECOP I', titulo: r.objeto_del_contrato_a_la || r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad, proveedor: r.nom_razon_social_contratista, url, extra: enlacesVeeduria(r.nit_de_la_entidad, r.identificacion_del_contratista), ruta: `#/secop1/${encodeURIComponent(r.uid)}` })}
     ${seccion('alertas', 'Resumen de alertas', '<div id="resumen-alertas"></div>')}
     ${seccion('datos', 'Datos clave del contrato', `<dl class="grilla-datos">
       ${campo('Constancia', r.numero_de_constancia)}${campo('Número de proceso', r.numero_de_proceso)}${campo('Número de contrato', r.numero_de_contrato)}
@@ -485,7 +503,8 @@ export async function vistaSecop1(raiz, id) {
       { fecha: r.fecha_fin_ejec_contrato, titulo: 'Fin de ejecución', fuente: 'f789-7hwg' },
       { fecha: r.fecha_liquidacion, titulo: 'Liquidación', fuente: 'f789-7hwg', tipo: 'post' },
     ]))}
-    ${seccion('ejecucion', 'Análisis de ejecución', `<h4>Adiciones frente al valor inicial (tope del 50 %)</h4>${editor}`)}
+    ${seccion('ejecucion', 'Análisis de ejecución', `<h4>Alertas de ejecución</h4>${alertasHtml(ejecucion)}
+      <h4>Adiciones frente al valor inicial (tope del 50 %)</h4>${editor}`)}
     ${seccion('precontractual', 'Análisis precontractual', `
       ${checklist(`checklist:${r.uid}`, pre, { urlExpediente: url, justificacion: r.causal_de_otras_formas_de })}
       <h4>Contratos entre la entidad y el proveedor</h4>${tablaHistorial(hist, r.numero_de_constancia)}`)}
@@ -494,5 +513,5 @@ export async function vistaSecop1(raiz, id) {
   activarEditorAdiciones(raiz);
   activarChecklist(raiz);
   activarComunes(raiz);
-  sincronizarResumenAdiciones(raiz, [{ id: 'plazoOfertas', ...pre.plazoOfertas }, pre.directaRepetida && { id: 'directaRepetida', ...pre.directaRepetida }]);
+  sincronizarResumenAdiciones(raiz, [{ id: 'plazoOfertas', ...pre.plazoOfertas }, pre.directaRepetida && { id: 'directaRepetida', ...pre.directaRepetida }, ...ejecucion]);
 }

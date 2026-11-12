@@ -50,6 +50,38 @@ export const REGLAS = [
     umbral: 'Aviso si un proveedor tiene 3 o más contratos directos con la entidad en alguna ventana de 12 meses.',
     limites: 'Es habitual en prestación de servicios profesionales y de apoyo a la gestión. Revisa el objeto y la causal de cada contrato.',
   },
+  {
+    id: 'inicioAntesFirma',
+    titulo: 'Inicio de ejecución anterior a la firma',
+    norma: 'Ley 80 de 1993, art. 41 (modificado por la Ley 1150 de 2007, art. 23): perfeccionamiento y requisitos de ejecución',
+    texto: 'El contrato estatal se perfecciona cuando el acuerdo se eleva a escrito. Para ejecutarlo se necesitan el registro presupuestal y la garantía aprobada. Ejecutar antes de la firma es prestar un servicio sin contrato (hechos cumplidos).',
+    umbral: 'Aviso si SECOP reporta la fecha de inicio de ejecución en un día anterior al de la firma. Se comparan solo los días, no las horas.',
+    limites: 'Es frecuente que sea un error de digitación en SECOP. Compara el acta de inicio, el registro presupuestal y la aprobación de la garantía en el expediente.',
+  },
+  {
+    id: 'prorrogas',
+    titulo: 'Prórrogas que suman la mitad o más del plazo inicial',
+    norma: 'Ley 80 de 1993, arts. 25 (num. 7 y 12) y 26 (planeación y responsabilidad). La ley no fija un tope al tiempo adicionado: el tope del art. 40 es solo para el valor (verificar criterio aplicable)',
+    texto: 'Prorrogar un contrato es legal si hay justificación y se hace antes de que venza el plazo. Sin embargo, cuando el tiempo adicionado es grande frente al plazo inicial, conviene revisar si hubo fallas de planeación o si la prórroga cambió el objeto.',
+    umbral: 'Aviso si los días adicionados que reporta SECOP II son el 50 % o más del plazo inicial. El plazo inicial se calcula como fecha de fin menos fecha de inicio menos días adicionados.',
+    limites: 'Supone que la fecha de fin que reporta SECOP ya incluye las prórrogas. No aplica a SECOP I ni a los contratos que solo están en SECOP Integrado, porque no publican los días adicionados. No es un límite legal: es un indicio.',
+  },
+  {
+    id: 'liquidacion',
+    titulo: 'Contrato terminado sin liquidación reportada',
+    norma: 'Ley 80 de 1993, art. 60 (modificado por el Decreto-Ley 019 de 2012, art. 217); Ley 1150 de 2007, art. 11; Ley 1437 de 2011 (CPACA), art. 164, num. 2, lit. j',
+    texto: 'Los contratos de tracto sucesivo y los que lo requieran se liquidan de común acuerdo en el plazo pactado o, si no se pactó, en los 4 meses siguientes a la terminación. Si no hay acuerdo, la entidad liquida de forma unilateral en los 2 meses siguientes. Después, la liquidación todavía puede hacerse dentro de los 2 años siguientes. La liquidación no es obligatoria en los contratos de prestación de servicios profesionales y de apoyo a la gestión.',
+    umbral: 'Solo se evalúa si SECOP dice que el contrato requiere liquidación (o, en SECOP I, si el estado es "Terminado sin Liquidar"). Aviso si ya venció el plazo para liquidar de común acuerdo y SECOP no reporta el contrato como cerrado o liquidado. Alerta alta si además pasaron los 2 meses de la liquidación unilateral y los 2 años siguientes. Como plazo de común acuerdo se toma el mayor entre el periodo de liquidación que reporta SECOP y los 4 meses.',
+    limites: 'Depende de que la entidad actualice el estado del contrato en SECOP. El contrato puede estar liquidado sin que el estado haya cambiado: busca el acta de liquidación en el expediente. El plazo cuenta desde la terminación real, que puede ser distinta de la fecha de fin reportada (por ejemplo, por terminación anticipada).',
+  },
+  {
+    id: 'pagosExceso',
+    titulo: 'Pagos por encima del valor del contrato',
+    norma: 'Ley 80 de 1993, arts. 40 y 41; Decreto 111 de 1996, art. 71 (registro presupuestal; verificar)',
+    texto: 'La entidad solo puede pagar hasta el valor del contrato y de sus adiciones, que deben tener registro presupuestal. Un valor pagado mayor que el valor del contrato indica pagos sin respaldo o un error de registro.',
+    umbral: 'Alerta alta si el valor pagado que reporta SECOP II supera el valor del contrato en más de un peso.',
+    limites: 'Verifica si el valor del contrato en SECOP ya incluye las adiciones. Solo está disponible para contratos de SECOP II con datos de pago.',
+  },
 ];
 
 export const ETAPAS = [

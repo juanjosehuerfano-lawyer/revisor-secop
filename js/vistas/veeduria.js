@@ -3,15 +3,16 @@
 // (y a veces con valores distintos); sumar con $group en la API inflaría los resultados.
 
 import { consultar, consultarSeguro, lit } from '../api.js';
-import { esc, valor, fmtCOP, fmtNum, fmtFecha, fechaISO, num, campo, fuenteChip, almacen, NR } from '../util.js';
+import { esc, valor, fmtCOP, fmtNum, fmtFecha, fmtFechaHora, fechaISO, num, campo, fuenteChip, almacen, aCsv, descargar, NR } from '../util.js';
 import { cargando, errorHtml, seccion, tabla, alertaHtml } from './comun.js';
-import { claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento } from '../reglas.js';
+import { claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento, evaluarInicioAntesDeFirma } from '../reglas.js';
+import { botonSeguir, activarSeguir } from './casos.js';
 
 const POR_PAGINA_API = 50000;
 const MAX_FILAS = 150000;
 // Valores por debajo de esto (p. ej. $1) son registros de prueba o sin diligenciar: no sirven para comparar.
 const VALOR_MINIMO_REAL = 10000;
-const CAMPOS = 'numero_del_contrato,origen,fecha_de_firma_del_contrato,modalidad_de_contrataci_n,valor_contrato,documento_proveedor,nom_raz_social_contratista,objeto_del_proceso,objeto_a_contratar,nombre_de_la_entidad,nit_de_la_entidad,codigo_entidad_en_secop,estado_del_proceso,tipo_de_contrato';
+const CAMPOS = 'numero_del_contrato,origen,fecha_de_firma_del_contrato,fecha_inicio_ejecuci_n,fecha_fin_ejecuci_n,modalidad_de_contrataci_n,valor_contrato,documento_proveedor,nom_raz_social_contratista,objeto_del_proceso,objeto_a_contratar,nombre_de_la_entidad,nit_de_la_entidad,codigo_entidad_en_secop,estado_del_proceso,tipo_de_contrato';
 
 const ETIQUETA_CLASE = {
   licitacion: 'Licitación pública', seleccion_abreviada: 'Selección abreviada', concurso: 'Concurso de méritos',
@@ -61,6 +62,7 @@ async function cargarContratos(where) {
     if (!e) {
       mapa.set(k, {
         id: f.numero_del_contrato, origen: f.origen, fecha: fechaISO(f.fecha_de_firma_del_contrato), modalidad: f.modalidad_de_contrataci_n,
+        inicio: fechaISO(f.fecha_inicio_ejecuci_n), fin: fechaISO(f.fecha_fin_ejecuci_n), tipo: f.tipo_de_contrato,
         clase: claseModalidad(f.modalidad_de_contrataci_n) || 'otra', valor: v, valorMin: v, filas: 1,
         proveedor: documentoBase(f.documento_proveedor) || null, nombreProveedor: f.nom_raz_social_contratista, objeto: f.objeto_del_proceso || f.objeto_a_contratar,
         entidad: f.nombre_de_la_entidad, nitEntidad: f.nit_de_la_entidad, codigoEntidad: f.codigo_entidad_en_secop, estado: f.estado_del_proceso,
@@ -89,19 +91,37 @@ function agrupar(lista, clave) {
 }
 const suma = lista => lista.reduce((s, c) => s + (c.valor || 0), 0);
 
-function formularioPeriodo(base, p) {
+function formularioPeriodo(base, p, caso, hayContratos) {
   return `<form class="periodo no-imprimir" data-base="${esc(base)}">
     <div class="grilla-form">
       <label>Desde<input type="date" name="desde" value="${esc(p.desde)}"></label>
       <label>Hasta<input type="date" name="hasta" value="${esc(p.hasta)}"></label>
     </div>
     <div class="acciones"><button type="submit">Actualizar</button>
-      <button type="button" class="secundario" data-accion="imprimir">Exportar a PDF</button></div>
-    <p class="ayuda-campo">El periodo usa la fecha de firma. Periodos largos en entidades grandes pueden tardar: la app descarga cada contrato para quitar duplicados.</p>
+      <button type="button" class="secundario" data-accion="imprimir">Exportar a PDF</button>
+      ${hayContratos ? '<button type="button" class="secundario" data-accion="csv">Descargar contratos (Excel)</button>' : ''}
+      ${botonSeguir({ ...caso, ruta: base })}</div>
+    <p class="ayuda-campo">El periodo usa la fecha de firma. Periodos largos en entidades grandes pueden tardar: la app descarga cada contrato para quitar duplicados.
+      El archivo de Excel (CSV) trae todos los contratos del periodo sin duplicados; las celdas vacías son datos no reportados en SECOP.</p>
   </form>`;
 }
 
-function activar(raiz) {
+// Un contrato por fila, con la fuente y la hora de consulta en cada una. Las celdas vacías son datos que SECOP no reporta.
+function exportarCsv({ contratos, consultas }, nombreArchivo) {
+  const app = location.origin + location.pathname;
+  const fuente = `https://www.datos.gov.co/d/${consultas[0].conjunto.id}`, consultado = fmtFechaHora(consultas[0].consultadoEn);
+  descargar(nombreArchivo, aCsv(
+    ['Contrato', 'Sistema', 'Entidad', 'NIT entidad', 'Proveedor', 'Documento proveedor', 'Modalidad', 'Clase de modalidad', 'Tipo de contrato',
+      'Firma', 'Inicio de ejecución', 'Fin de ejecución', 'Días de inicio antes de la firma', 'Valor (mayor reportado)', 'Valor menor reportado',
+      'Filas en SECOP Integrado', 'Estado', 'Objeto', 'Ficha en Revisor SECOP', 'Fuente', 'Consultado'],
+    contratos.map(c => [c.id, c.origen === 'SECOPI' ? 'SECOP I' : 'SECOP II', c.entidad, c.nitEntidad, c.nombreProveedor, c.proveedor, c.modalidad,
+      ETIQUETA_CLASE[c.clase], c.tipo, c.fecha, c.inicio, c.fin, evaluarInicioAntesDeFirma({ fechaFirma: c.fecha, fechaInicio: c.inicio }).dias,
+      c.valor, c.valorMin, c.filas, c.estado, c.objeto, app + href(c), fuente, consultado])));
+}
+
+function activar(raiz, datos, nombreArchivo) {
+  activarSeguir(raiz);
+  raiz.querySelector('[data-accion=csv]')?.addEventListener('click', () => exportarCsv(datos, nombreArchivo));
   raiz.querySelector('form.periodo')?.addEventListener('submit', ev => {
     ev.preventDefault();
     const f = ev.target;
@@ -114,7 +134,7 @@ function activar(raiz) {
 function barras(filas) {
   const max = Math.max(...filas.map(f => f.valor), 1);
   return `<div class="barras">${filas.map(f => `<div class="barra-fila"><span class="barra-etq">${esc(f.etiqueta)}</span>
-    <span class="barra-pista"><span class="barra" style="width:${Math.max(1, (f.valor / max) * 100).toFixed(1)}%"></span></span>
+    <span class="barra-pista"><span class="barra-relleno" style="width:${Math.max(1, (f.valor / max) * 100).toFixed(1)}%"></span></span>
     <span class="barra-val">${esc(f.texto)}</span></div>`).join('')}</div>`;
 }
 
@@ -180,6 +200,18 @@ function valoresDistintos(contratos) {
   return `<p>SECOP Integrado publica varias filas para estos contratos, con valores distintos. La diferencia puede deberse a adiciones, pero también a errores de registro: es un <strong>indicio para revisar</strong> en la ficha y en el expediente. Si el valor mayor supera en más de 50 % al menor, revisa el tope del art. 40 de la Ley 80 de 1993. Se omiten valores menores de $10.000, que suelen ser registros sin diligenciar.</p>`
     + tabla(['Contrato', 'Valor menor', 'Valor mayor', 'Aumento', 'Objeto'],
       l.map(c => [enlaceContrato(c), fmtCOP(c.valorMin), fmtCOP(c.valor), `<strong${c.razon > 1.5 ? ' class="texto-alta"' : ''}>${fmtNum((c.razon - 1) * 100, ' %')}</strong>`, corto(c.objeto, 160)]));
+}
+
+function inicioAntesFirma(contratos) {
+  const conDatos = contratos.filter(c => c.fecha && c.inicio);
+  const l = conDatos.map(c => ({ c, dias: evaluarInicioAntesDeFirma({ fechaFirma: c.fecha, fechaInicio: c.inicio }).dias }))
+    .filter(x => x.dias > 0).sort((a, b) => b.dias - a.dias);
+  return alertaHtml('inicioAntesFirma', { nivel: l.length ? 'media' : conDatos.length ? 'ok' : 'sin_datos' }, conDatos.length
+    ? `${fmtNum(l.length)} de ${fmtNum(conDatos.length)} contratos con ambas fechas (${fmtNum(pct(l.length, conDatos.length))} %) reportan el inicio de ejecución antes del día de la firma.`
+    : 'SECOP no reporta la fecha de firma y la de inicio de estos contratos.')
+    + (l.length ? tabla(['Contrato', 'Firma', 'Inicio', 'Días antes', 'Valor', 'Objeto'],
+      l.slice(0, 25).map(({ c, dias }) => [enlaceContrato(c), fmtFecha(c.fecha), fmtFecha(c.inicio), fmtNum(dias), fmtCOP(c.valor), corto(c.objeto, 140)]))
+      + (l.length > 25 ? `<p class="ayuda-campo">Se muestran 25 de ${fmtNum(l.length)}. El archivo de Excel los trae todos.</p>` : '') : '');
 }
 
 function mayores(contratos, columnaExtra) {
@@ -291,7 +323,7 @@ export async function vistaEntidad(raiz, nit, params) {
     <header class="tarjeta ficha-encabezado"><p class="migas"><a href="#/veeduria">← Veeduría</a></p>
       <p class="etiqueta">Veeduría · Entidad</p><h2>${esc(nombre)}</h2>
       <p class="res-entidad">NIT ${esc(nit)} · Periodo: ${fmtFecha(p.desde)} a ${fmtFecha(p.hasta)}</p>
-      ${formularioPeriodo(base, p)}
+      ${formularioPeriodo(base, p, { tipo: 'Veeduría · Entidad', titulo: nombre, detalle: `NIT ${nit}` }, contratos.length > 0)}
       ${datos.truncado ? `<div class="aviso">El periodo tiene más de ${fmtNum(MAX_FILAS)} filas; solo se analizaron las primeras. Acorta el periodo para un análisis completo.</div>` : ''}
     </header>
     ${contratos.length ? `
@@ -302,13 +334,14 @@ export async function vistaEntidad(raiz, nit, params) {
     ${seccion('v-directa', 'Contratación directa repetida', directaRepetida(contratos, c => c.proveedor, c => c.nombreProveedor, enlaceProv))}
     ${seccion('v-fracc', 'Posible fraccionamiento', bloqueFraccionamiento(`fracc:${nit}`, paa.topes), paa.consulta ? fuenteChip(paa.consulta) : '')}
     ${seccion('v-competencia', 'Competencia en procesos (SECOP II)', comp.html, fuenteChip(comp.consulta))}
+    ${seccion('v-inicio', 'Inicio de ejecución antes de la firma', inicioAntesFirma(contratos))}
     ${seccion('v-valores', 'Contratos con valores distintos', valoresDistintos(contratos))}
     ${seccion('v-mayores', 'Contratos de mayor valor', mayores(contratos, { titulo: 'Proveedor', valor: c => c.proveedor ? `${esc(valor(c.nombreProveedor))}<br>${enlaceProv(c.proveedor)}` : NR }))}
     ${nombres.length > 1 ? seccion('v-nombres', 'Nombres con que aparece la entidad', tabla(['Nombre', 'NIT', 'Contratos'], nombres.map(n => [esc(n[0]), esc(n[1]), fmtNum(n[2])]))) : ''}
     ` : `<div class="tarjeta"><p>SECOP no reporta contratos de esta entidad en el periodo.</p></div>`}
     ${fuentes([...datos.consultas, paa.consulta, comp.consulta])}
     ${AVISO}`;
-  activar(raiz);
+  activar(raiz, datos, `veeduria-entidad-${nit}-${p.desde}-a-${p.hasta}.csv`);
   activarFraccionamiento(raiz, contratos);
 }
 
@@ -333,7 +366,7 @@ export async function vistaProveedor(raiz, doc, params) {
     <header class="tarjeta ficha-encabezado"><p class="migas"><a href="#/veeduria">← Veeduría</a></p>
       <p class="etiqueta">Veeduría · Proveedor</p><h2>${esc(nombre)}</h2>
       <p class="res-entidad">Documento ${esc(doc)} · Periodo: ${fmtFecha(p.desde)} a ${fmtFecha(p.hasta)}</p>
-      ${formularioPeriodo(base, p)}
+      ${formularioPeriodo(base, p, { tipo: 'Veeduría · Proveedor', titulo: nombre, detalle: `Documento ${doc}` }, contratos.length > 0)}
     </header>
     ${seccion('v-registro', 'Registro en SECOP II', r ? `<dl class="grilla-datos">
       ${campo('Nombre', r.nombre)}${campo('NIT / documento', r.nit)}${campo('Tipo de empresa', r.tipo_empresa)}
@@ -346,12 +379,13 @@ export async function vistaProveedor(raiz, doc, params) {
     ${seccion('v-anio', 'Contratos por año', barras(porAnio.map(([a, l]) => ({ etiqueta: a, valor: suma(l), texto: `${l.length} · ${fmtCOP(suma(l))}` }))))}
     ${seccion('v-entidades', 'Entidades que le contratan', concentracion(contratos, { titulo: 'Entidad', clave: nitEnt, nombre: c => c.entidad, enlace: enlaceEnt }))}
     ${seccion('v-directa', 'Contratación directa repetida por entidad', directaRepetida(contratos, nitEnt, c => c.entidad, enlaceEnt))}
+    ${seccion('v-inicio', 'Inicio de ejecución antes de la firma', inicioAntesFirma(contratos))}
     ${seccion('v-valores', 'Contratos con valores distintos', valoresDistintos(contratos))}
     ${seccion('v-mayores', 'Contratos de mayor valor', mayores(contratos, { titulo: 'Entidad', valor: c => esc(valor(c.entidad)) }))}
     ` : `<div class="tarjeta"><p>SECOP no reporta contratos de este proveedor en el periodo.</p></div>`}
     ${fuentes([...datos.consultas, reg])}
     ${AVISO}`;
-  activar(raiz);
+  activar(raiz, datos, `veeduria-proveedor-${String(doc).replace(/\W/g, '')}-${p.desde}-a-${p.hasta}.csv`);
 }
 
 // ================= Buscador de veeduría =================

@@ -64,7 +64,7 @@ h4 { font-size: 1rem; margin-top: 1.4rem; }
   color: var(--texto-suave); text-decoration: none; font-weight: 500;
 }
 .pestanas a[aria-current="page"] { background: var(--acento-suave); color: var(--acento); }
-.pestanas svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pestanas svg, .ajustes svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 720px) {
   .pestanas {
     position: fixed; bottom: 0; left: 0; right: 0; justify-content: space-around; background: var(--superficie);
@@ -88,7 +88,7 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; font-
 input, select, textarea, button, .boton { font: inherit; }
 input, select, textarea {
   width: 100%; padding: 9px 11px; border: 1px solid var(--borde); border-radius: 8px;
-  background: var(--superficie); color: var(--texto); font-weight: 400;
+  background: var(--superficie); color: var(--texto); font-weight: 400; font-size: 1rem;
 }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
 .grilla-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
@@ -144,7 +144,7 @@ td { font-variant-numeric: tabular-nums; }
 .migas { margin: 0 0 8px; font-size: .9rem; }
 
 /* Alertas */
-.alerta { border-left: 4px solid var(--info); background: var(--info-fondo); border-radius: 8px; padding: 12px 14px; margin: 10px 0; }
+.alerta { border: 1px solid var(--info); background: var(--info-fondo); border-radius: 8px; padding: 12px 14px; margin: 10px 0; }
 .alerta header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .alerta h4 { margin: 0; font-size: .98rem; }
 .alerta p { margin: .45rem 0 0; }
@@ -202,7 +202,7 @@ details.ayuda summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .barra-fila { display: grid; grid-template-columns: 72px 1fr minmax(130px, auto); gap: 10px; align-items: center; font-size: .85rem; }
 .barra-etq { color: var(--texto-suave); font-variant-numeric: tabular-nums; }
 .barra-pista { background: var(--superficie-2); border-radius: 4px; height: 14px; overflow: hidden; }
-.barra { display: block; height: 100%; background: var(--acento); border-radius: 4px; }
+.barra-relleno { display: block; height: 100%; background: var(--acento); border-radius: 4px; }
 .barra-val { font-variant-numeric: tabular-nums; text-align: right; }
 @media (max-width: 520px) { .barra-fila { grid-template-columns: 60px 1fr; } .barra-val { grid-column: 1 / -1; text-align: left; } }
 .kpis .campo dd { font-size: 1.15rem; font-weight: 600; }
@@ -226,3 +226,18 @@ details.ayuda summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
   input, select, textarea { border: none; padding: 0; background: none; }
   .tabla-scroll { overflow: visible; }
 }
+
+/* Ajustes en la barra y objetivos táctiles */
+.marca { min-height: 40px; }
+.pestanas { margin-left: auto; }
+.ajustes { display: flex; align-items: center; padding: 8px; border-radius: 8px; color: var(--texto-suave); }
+.ajustes[aria-current="page"] { background: var(--acento-suave); color: var(--acento); }
+.enlaces-verificacion li a, .indice a, .migas a, #ay-enlaces li a { display: inline-block; padding: 6px 0; }
+
+/* Casos */
+.seguir[aria-pressed="true"] { background: var(--acento-suave); border-color: transparent; }
+.caso h3 { font-size: 1rem; margin: .4rem 0; }
+.caso h3 a { color: var(--texto); }
+.caso label { margin-top: 8px; }
+
+.boton:focus-within { outline: 2px solid var(--acento); outline-offset: 2px; }

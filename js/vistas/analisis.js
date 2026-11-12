@@ -1,7 +1,10 @@
 // Componentes de análisis reutilizados por las fichas: regla del 50 %, checklist precontractual y línea de tiempo.
 
 import { esc, valor, fmtCOP, fmtNum, fmtFecha, fechaISO, num, almacen, NR } from '../util.js';
-import { evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida } from '../reglas.js';
+import {
+  evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida,
+  evaluarInicioAntesDeFirma, evaluarProrrogas, evaluarLiquidacion, evaluarPagos,
+} from '../reglas.js';
 import { CHECKLIST } from '../normas.js';
 import { alertaHtml, tabla } from './comun.js';
 
@@ -219,3 +222,37 @@ export function tablaEjecucion(filas) {
     filas.map(f => [esc(valor(f.nombreplan)), esc(valor(f.tipoejecucion)), fmtFecha(f.fechadeentregaesperada), fmtFecha(f.fechadeentregareal),
       fmtNum(f.porcentajedeavanceesperado, ' %'), fmtNum(f.porcentaje_de_avance_real, ' %'), esc(valor(f.estado_del_contrato))]));
 }
+
+// ---------- Alertas de ejecución ----------
+
+/**
+ * Reglas sobre la ejecución del contrato. Devuelve [{ id, r, detalle }] en el orden en que se muestran.
+ * `omitir` deja por fuera las reglas que la fuente no puede alimentar (p. ej. SECOP I no publica pagos).
+ */
+export function evaluarEjecucion(c, { hoy = new Date().toISOString().slice(0, 10), omitir = [] } = {}) {
+  const firma = fechaISO(c.fechaFirma), inicio = fechaISO(c.fechaInicio), fin = fechaISO(c.fechaFin);
+  const ini = evaluarInicioAntesDeFirma({ fechaFirma: firma, fechaInicio: inicio });
+  const pro = evaluarProrrogas({ fechaInicio: inicio, fechaFin: fin, diasAdicionados: c.diasAdicionados });
+  const liq = evaluarLiquidacion({
+    requiere: c.requiereLiquidacion, estado: c.estado, fechaFin: fin,
+    fechaLimitePactada: fechaISO(c.fechaLimiteLiquidacion), fechaLiquidacion: fechaISO(c.fechaLiquidacion), hoy,
+  });
+  const pag = evaluarPagos({ valorContrato: c.valor, valorPagado: c.valorPagado });
+  return [
+    { id: 'inicioAntesFirma', r: ini, detalle: ini.dias === undefined ? esc(ini.motivo)
+      : ini.dias > 0 ? `SECOP reporta el inicio de ejecución el ${fmtFecha(inicio)}, <strong>${fmtNum(ini.dias)} día(s) antes</strong> de la firma (${fmtFecha(firma)}). Puede ser un error de registro o una ejecución sin contrato perfeccionado: revisa el acta de inicio, el registro presupuestal y la aprobación de la garantía.`
+        : `El inicio de ejecución (${fmtFecha(inicio)}) no es anterior a la firma (${fmtFecha(firma)}).` },
+    { id: 'prorrogas', r: pro, detalle: pro.pct === undefined ? esc(pro.motivo)
+      : `SECOP reporta <strong>${fmtNum(pro.diasAdicionados)} día(s) adicionados</strong> a un plazo inicial de ${fmtNum(pro.plazoInicial)} días: el <strong>${fmtNum(pro.pct, ' %')}</strong>.${pro.nivel === 'media' ? ' Revisa la justificación de cada prórroga y si se firmó antes de vencer el plazo.' : ''}` },
+    { id: 'liquidacion', r: liq, detalle: liq.limiteBilateral === undefined ? esc(liq.motivo)
+      : `El contrato terminó el ${fmtFecha(fin)}, hace ${fmtNum(liq.diasDesdeFin)} días, y SECOP reporta el estado "${esc(valor(c.estado))}". `
+        + (liq.nivel === 'ok' ? `El plazo para liquidar de común acuerdo va hasta el ${fmtFecha(liq.limiteBilateral)}.`
+          : liq.nivel === 'media' ? `El plazo para liquidar de común acuerdo venció el ${fmtFecha(liq.limiteBilateral)}. La entidad aún puede liquidar hasta el ${fmtFecha(liq.limiteFinal)}. Busca el acta de liquidación en el expediente.`
+            : `<strong>También venció el término máximo para liquidar (${fmtFecha(liq.limiteFinal)}).</strong> Verifica en el expediente si hay acta de liquidación; si no la hay, revisa si la entidad perdió la competencia para liquidar.`) },
+    { id: 'pagosExceso', r: pag, detalle: pag.pct === undefined ? esc(pag.motivo)
+      : pag.nivel === 'alta' ? `SECOP reporta pagos por <strong>${fmtCOP(c.valorPagado)}</strong>, que superan en <strong>${fmtCOP(pag.exceso)}</strong> el valor del contrato (${fmtCOP(c.valor)}).`
+        : `SECOP reporta pagos por ${fmtCOP(c.valorPagado)}: el ${fmtNum(pag.pct, ' %')} del valor del contrato.` },
+  ].filter(x => !omitir.includes(x.id));
+}
+
+export const alertasHtml = items => items.map(x => alertaHtml(x.id, x.r, x.detalle)).join('');

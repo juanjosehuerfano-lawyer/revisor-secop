@@ -11,7 +11,7 @@ export const CONJUNTOS = {
   proveedores: { id: 'qmzu-gj57', nombre: 'SECOP II – Proveedores registrados' },
   paa:         { id: 'b6m4-qgqv', nombre: 'SECOP II – Plan Anual de Adquisiciones (encabezado)' },
   secop1:      { id: 'f789-7hwg', nombre: 'SECOP I – Procesos de Compra Pública' },
-  // jbjy-vk9h solo expone 1.000 filas por la API (verificado el 2026-10-25). SECOP Integrado cubre SECOP I y II con campos reducidos.
+  // SECOP Integrado cubre SECOP I y II con campos reducidos: es la fuente de la búsqueda y de la veeduría, y el respaldo de la ficha.
   integrado:   { id: 'rpmr-utcd', nombre: 'SECOP Integrado (SECOP I y II)' },
 };
 

@@ -1,7 +1,11 @@
 // Una prueba (o más) por regla de alerta. Corren en el navegador (tests/index.html) y en Node (tests/reglas.test.js).
 
-import { evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida, claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento } from '../js/reglas.js';
+import {
+  evaluarAdiciones, evaluarPlazoOfertas, evaluarProponenteUnico, evaluarDirectaRepetida, claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento,
+  evaluarInicioAntesDeFirma, evaluarProrrogas, evaluarLiquidacion, evaluarPagos,
+} from '../js/reglas.js';
 import { festivos, diasHabilesEntre } from '../js/festivos.js';
+import { aCsv } from '../js/util.js';
 
 function iguales(real, esperado, msg = '') {
   if (JSON.stringify(real) !== JSON.stringify(esperado)) throw new Error(`${msg} esperado ${JSON.stringify(esperado)}, obtenido ${JSON.stringify(real)}`);
@@ -143,5 +147,63 @@ export const CASOS = [
     iguales(claseModalidad('Concurso de méritos abierto'), 'concurso');
     iguales(claseModalidad('Contratación Directa (con ofertas)'), 'directa');
     iguales(claseModalidad(''), null);
+  }],
+
+  // ----- Inicio de ejecución antes de la firma (Ley 80/1993, art. 41)
+  ['Inicio antes de la firma: 3 días antes → revisar; el mismo día (con horas distintas) → sin alerta', () => {
+    const r = evaluarInicioAntesDeFirma({ fechaFirma: '2025-03-10', fechaInicio: '2025-03-07' });
+    iguales(r.nivel, 'media'); iguales(r.dias, 3);
+    iguales(evaluarInicioAntesDeFirma({ fechaFirma: '2025-09-01T10:23:45.493', fechaInicio: '2025-09-01T08:00:00.000' }).nivel, 'ok');
+    iguales(evaluarInicioAntesDeFirma({ fechaFirma: '2025-09-01', fechaInicio: '' }).nivel, 'sin_datos');
+  }],
+
+  // ----- Prórrogas frente al plazo inicial
+  ['Prórrogas: 60 días sobre un plazo inicial de 120 (50 %) → revisar; 30 días (25 %) → sin alerta', () => {
+    const r = evaluarProrrogas({ fechaInicio: '2025-01-01', fechaFin: '2025-06-30', diasAdicionados: 60 });
+    iguales(r.plazoInicial, 120); cerca(r.pct, 50); iguales(r.nivel, 'media');
+    iguales(evaluarProrrogas({ fechaInicio: '2025-01-01', fechaFin: '2025-05-31', diasAdicionados: '30' }).nivel, 'ok');
+  }],
+  ['Prórrogas: sin días adicionados → información; campo ausente o fechas incoherentes → sin datos', () => {
+    iguales(evaluarProrrogas({ fechaInicio: '2025-01-01', fechaFin: '2025-06-30', diasAdicionados: '0' }).nivel, 'info');
+    iguales(evaluarProrrogas({ fechaInicio: '2025-01-01', fechaFin: '2025-06-30' }).nivel, 'sin_datos');
+    iguales(evaluarProrrogas({ fechaInicio: '2025-01-01', fechaFin: '2025-01-10', diasAdicionados: 30 }).nivel, 'sin_datos');
+  }],
+
+  // ----- Liquidación (Ley 1150/2007, art. 11)
+  ['Liquidación: dentro de los 4 meses → sin alerta; después → revisar; pasados 4 + 2 meses y 2 años → alerta alta', () => {
+    const base = { requiere: true, estado: 'terminado', fechaFin: '2023-12-31' };
+    iguales(evaluarLiquidacion({ ...base, hoy: '2024-03-15' }).nivel, 'ok');
+    const m = evaluarLiquidacion({ ...base, hoy: '2024-06-01' });
+    iguales(m.nivel, 'media'); iguales(m.limiteBilateral, '2024-05-01'); iguales(m.limiteFinal, '2026-07-01');
+    iguales(evaluarLiquidacion({ ...base, hoy: '2026-07-02' }).nivel, 'alta');
+  }],
+  ['Liquidación: se usa el plazo pactado si es mayor que los 4 meses', () => {
+    const r = evaluarLiquidacion({ requiere: true, estado: 'En ejecución', fechaFin: '2023-12-31', fechaLimitePactada: '2024-09-30', hoy: '2024-08-01' });
+    iguales(r.nivel, 'ok'); iguales(r.limiteBilateral, '2024-09-30');
+  }],
+  ['Liquidación: cerrado, liquidado, no requiere, en ejecución y sin datos no generan alerta', () => {
+    iguales(evaluarLiquidacion({ requiere: true, estado: 'Cerrado', fechaFin: '2020-01-01', hoy: '2026-01-01' }).nivel, 'ok');
+    iguales(evaluarLiquidacion({ estado: 'Liquidado', fechaFin: '2020-01-01', hoy: '2026-01-01' }).nivel, 'ok');
+    iguales(evaluarLiquidacion({ requiere: false, estado: 'terminado', fechaFin: '2020-01-01', hoy: '2026-01-01' }).nivel, 'info');
+    iguales(evaluarLiquidacion({ requiere: true, estado: 'En ejecución', fechaFin: '2026-12-31', hoy: '2026-01-01' }).nivel, 'info');
+    iguales(evaluarLiquidacion({ estado: 'Celebrado', fechaFin: '2020-01-01', hoy: '2026-01-01' }).nivel, 'sin_datos');
+  }],
+  ['Liquidación: en SECOP I, "Terminado sin Liquidar" se evalúa aunque no diga si requiere liquidación', () => {
+    iguales(evaluarLiquidacion({ estado: 'Terminado sin Liquidar', fechaFin: '2020-01-01', hoy: '2026-01-01' }).nivel, 'alta');
+  }],
+
+  // ----- Pagos por encima del valor del contrato
+  ['Pagos: pagado mayor que el valor → alerta alta; igual o menor → sin alerta; sin dato → sin datos', () => {
+    const r = evaluarPagos({ valorContrato: '100000000', valorPagado: '120000000' });
+    iguales(r.nivel, 'alta'); iguales(r.exceso, 20e6);
+    iguales(evaluarPagos({ valorContrato: 100e6, valorPagado: 100e6 }).nivel, 'ok');
+    iguales(evaluarPagos({ valorContrato: 100e6, valorPagado: 0 }).nivel, 'ok');
+    iguales(evaluarPagos({ valorContrato: 100e6 }).nivel, 'sin_datos');
+  }],
+
+  // ----- Exportación a CSV
+  ['CSV: separador ;, comillas escapadas, decimales con coma, vacíos y fórmulas neutralizadas', () => {
+    const csv = aCsv(['A', 'B'], [['x;y', 'dijo "hola"'], [1.5, null], ['=SUMA(A1)', '-5']]);
+    iguales(csv, '﻿A;B\r\n"x;y";"dijo ""hola"""\r\n1,5;\r\n\'=SUMA(A1);\'-5');
   }],
 ];
