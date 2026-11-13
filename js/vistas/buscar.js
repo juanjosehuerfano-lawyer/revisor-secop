@@ -65,8 +65,23 @@ const FUENTES = {
   },
 };
 
+// Fila de SECOP I (f789-7hwg) con la forma de un resultado de búsqueda.
+const filaSecop1 = r => ({
+  titulo: r.detalle_del_objeto_a_contratar, entidad: r.nombre_entidad,
+  proveedor: r.nom_razon_social_contratista, doc: r.identificacion_del_contratista,
+  valor: r.cuantia_contrato, valorEtiqueta: 'Cuantía del contrato',
+  fecha: r.fecha_de_firma_del_contrato, fechaEtiqueta: 'Firma',
+  inicio: r.fecha_ini_ejec_contrato, fin: r.fecha_fin_ejec_contrato,
+  modalidad: r.modalidad_de_contratacion, estado: r.estado_del_proceso,
+  origen: 'SECOP I', numero: r.numero_de_constancia, referencia: r.numero_de_contrato,
+  ficha: `#/secop1/${encodeURIComponent(r.uid)}`,
+  url: urlDe(r.ruta_proceso_en_secop_i),
+});
+
 export function destinoNumero(texto) {
-  const t = texto.trim();
+  const pegado = texto.trim();
+  // Si pegan el enlace de SECOP, se usa el número que trae adentro.
+  const t = (pegado.match(/numConstancia=(\d[\d-]+)/i) || [])[1] || (pegado.match(/CO1\.(PCCNTR|REQ|BDOS|NTC)\.\d+/i) || [])[0] || pegado;
   if (/^CO1\.PCCNTR\.\d+$/i.test(t)) return `#/contrato/${t.toUpperCase()}`;
   if (/^CO1\.(REQ|BDOS)\.\d+$/i.test(t)) return `#/proceso/${t.toUpperCase()}`;
   if (/^\d{2}-\d{1,2}-\d+(-\d+)?$/.test(t)) return `#/secop1/${t}`;
@@ -98,7 +113,7 @@ function formulario(p) {
   ${banda({ titulo: 'Buscar en SECOP', meta: 'Contratos de SECOP I y II y procesos de SECOP II, con los datos abiertos de datos.gov.co.', extra: `<form id="ir-numero" class="ir-numero no-imprimir">
     <label for="numero">Revisar un proceso o contrato por su número</label>
     <div class="fila-input">
-      <input id="numero" name="numero" placeholder="CO1.PCCNTR.…, CO1.REQ.…, CO1.BDOS.…, CO1.NTC.…, constancia SECOP I o referencia" value="${val('numero')}" autocomplete="off">
+      <input id="numero" name="numero" placeholder="Número, referencia o enlace de SECOP (CO1.PCCNTR.…, constancia 20-21-…)" value="${val('numero')}" autocomplete="off">
       <button type="submit">Revisar</button>
     </div>
   </form>` })}
@@ -188,11 +203,16 @@ async function buscarNumero(cont, numero) {
       : [
         consultar('integrado', { $where: `numero_de_proceso = ${lit(n)} OR numero_del_contrato = ${lit(n)}`, $limit: 50 }),
         consultar('procesos', { $where: `referencia_del_proceso = ${lit(n)}`, $limit: 50 }),
+        // SECOP Integrado guarda la constancia como "número de contrato": el número real del contrato solo está aquí.
+        consultar('secop1', { $where: `numero_de_contrato = ${lit(n)} OR numero_de_proceso = ${lit(n)}`, $limit: 50 }),
       ];
     const res = await Promise.all(consultas);
+    const integrado = res[0].filas.map(FUENTES.integrado.fila);
+    const constancias = new Set(integrado.map(x => x.numero));
     const filas = [
-      ...res[0].filas.map(FUENTES.integrado.fila),
+      ...integrado,
       ...(res[1] ? res[1].filas.map(FUENTES.procesos.fila) : []),
+      ...(res[2] ? res[2].filas.map(filaSecop1).filter(x => !constancias.has(x.numero)) : []),
     ];
     cont.innerHTML = `<div class="tarjeta"><h2>Resultados para <code>${esc(n)}</code></h2>
       ${filas.length ? '' : '<p>No se encontró ese número como referencia de proceso, número de contrato ni aviso. Prueba con el ID del contrato (CO1.PCCNTR.…) o búscalo en el SECOP.</p>'}</div>

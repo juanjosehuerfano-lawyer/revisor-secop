@@ -6,6 +6,7 @@ import {
 } from '../js/reglas.js';
 import { festivos, diasHabilesEntre } from '../js/festivos.js';
 import { aCsv } from '../js/util.js';
+import { destinoNumero } from '../js/vistas/buscar.js';
 
 function iguales(real, esperado, msg = '') {
   if (JSON.stringify(real) !== JSON.stringify(esperado)) throw new Error(`${msg} esperado ${JSON.stringify(esperado)}, obtenido ${JSON.stringify(real)}`);
@@ -243,6 +244,14 @@ export const CASOS = [
       '2026000186.pdf': 'otros', 'REQUISITOS MINIMOS DE CONTRATACION DIRECTA.pdf': 'otros', '': 'otros',
     };
     for (const [nombre, clase] of Object.entries(casos)) iguales(claseDocumento(nombre), clase, nombre + ':');
+  }],
+
+  ['Buscar por número: acepta el número o el enlace pegado de SECOP I y II', () => {
+    iguales(destinoNumero(' 20-21-20447 '), '#/secop1/20-21-20447');
+    iguales(destinoNumero('https://www.contratos.gov.co/consultas/detalleProceso.do?numConstancia=20-21-20447'), '#/secop1/20-21-20447');
+    iguales(destinoNumero('https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.123&isFromPublicArea=True'), '#/buscar?numero=CO1.NTC.123');
+    iguales(destinoNumero('co1.pccntr.8934192'), '#/contrato/CO1.PCCNTR.8934192');
+    iguales(destinoNumero('1504 DE 2021'), '#/buscar?numero=1504%20DE%202021');
   }],
 
   // ----- Exportación a CSV
