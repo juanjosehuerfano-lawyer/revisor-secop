@@ -152,7 +152,8 @@ function formulario(p) {
   <form id="form-buscar" class="tarjeta">
     <h3>Buscar con filtros</h3>
     <div class="grilla-form">
-      <label class="ancho">Texto libre<input name="texto" value="${val('texto')}" placeholder="Objeto, proveedor, palabra clave…"></label>
+      <label>Número del contrato o proceso<input name="num" value="${val('num')}" placeholder="Ej.: 001-2021, LP-005-2020" autocomplete="off"></label>
+      <label>Texto libre<input name="texto" value="${val('texto')}" placeholder="Objeto, proveedor, palabra clave…"></label>
       <label>Buscar en<select name="fuente">${opt(Object.entries(FUENTES).map(([k, v]) => [k, v.etiqueta]), p.fuente || 'integrado')}</select></label>
       <label>Sistema<select name="origen">${opt([['', 'SECOP I y II'], ['SECOPII', 'Solo SECOP II'], ['SECOPI', 'Solo SECOP I']], p.origen || '')}</select></label>
       <label>Entidad<input name="entidad" value="${val('entidad')}" placeholder="Ej.: Alcaldía de Yopal"></label>
@@ -165,7 +166,7 @@ function formulario(p) {
       <label>Fecha desde<input name="desde" type="date" value="${val('desde')}"></label>
       <label>Fecha hasta<input name="hasta" type="date" value="${val('hasta')}"></label>
     </div>
-    <p class="ayuda-campo">La fecha es la de firma en contratos y la de publicación en procesos. Puedes escribir sin tildes. "Sistema" solo aplica a los contratos; la modalidad no aplica a la Tienda Virtual. Si la búsqueda se demora, agrega el contratista, el NIT o un rango de fechas.</p>
+    <p class="ayuda-campo">El número se puede combinar con la entidad, el departamento o las fechas para descartar números repetidos de otras entidades. La fecha es la de firma en contratos y la de publicación en procesos. Puedes escribir sin tildes. "Sistema" solo aplica a los contratos; la modalidad no aplica a la Tienda Virtual. Si la búsqueda se demora, agrega el contratista, el NIT o un rango de fechas.</p>
     <div class="acciones"><button type="submit">Buscar</button><button type="reset" class="secundario">Limpiar</button></div>
   </form>
   <div id="resultados"></div>
@@ -204,7 +205,8 @@ async function ejecutarBusqueda(cont, p) {
       $offset: pagina * POR_PAGINA,
     };
     // El nombre del contratista va al buscador de texto de datos.gov.co: un "like" sobre el nombre no responde en conjuntos de millones de filas.
-    const q = [p.texto, p.proveedor].filter(Boolean).join(' ');
+    // El número va sin signos: en el buscador de texto un guion delante de una palabra la excluye.
+    const q = [p.num && p.num.replace(/[^\p{L}\p{N}]+/gu, ' ').trim(), p.texto, p.proveedor].filter(Boolean).join(' ');
     if (q) params.$q = q;
     const r = await consultar(f.conjunto, params);
     const hayMas = r.filas.length > POR_PAGINA;
@@ -217,7 +219,14 @@ async function ejecutarBusqueda(cont, p) {
     const trae = (campo, pedido) => { const nombre = normalizar(campo); return palabras(pedido || '').every(w => nombre.includes(w)); };
     const filas = pagina0.filter(x => trae(x.proveedor, p.proveedor) && trae(x.entidad, p.entidad));
     const ocultas = pagina0.length - filas.length;
-    const aviso = ocultas ? `<p class="ayuda-campo">En esta página se ocultaron ${ocultas} resultado(s) que no traen esas palabras en el nombre del contratista o de la entidad.</p>` : '';
+    // Con número: primero los que lo tienen idéntico; los demás solo lo mencionan en otro campo.
+    // shortcut: ordena dentro de la página, no entre páginas; basta mientras el número y los filtros dejen pocos resultados.
+    const clave = p.num ? claveNumero(p.num) : '';
+    const igual = x => [x.numero, x.referencia, x.contrato].some(v => v && claveNumero(v) === clave);
+    if (clave) filas.sort((a, b) => igual(b) - igual(a));
+    const sinExactas = clave && filas.length && !filas.some(igual);
+    const aviso = (ocultas ? `<p class="ayuda-campo">En esta página se ocultaron ${ocultas} resultado(s) que no traen esas palabras en el nombre del contratista o de la entidad.</p>` : '')
+      + (sinExactas ? `<p class="ayuda-campo">Ningún resultado de esta página tiene el número escrito igual a "${esc(p.num)}": lo traen con otra escritura (por ejemplo "N° 001 DE 2021") o en el objeto. Revisa la referencia de cada uno.</p>` : '');
     const nav = `<nav class="paginacion">
       ${pagina > 0 ? `<a class="boton secundario" href="${hashBusqueda({ ...p, pagina: pagina - 1 })}">Anterior</a>` : '<span></span>'}
       <span>Página ${pagina + 1}</span>
@@ -292,7 +301,8 @@ function hashBusqueda(p) {
 
 export function vistaBuscar(raiz, params) {
   const p = Object.fromEntries(params.entries());
-  raiz.innerHTML = formulario(p);
+  // Tras "Revisar" por número, el formulario queda con ese número para acotarlo con filtros.
+  raiz.innerHTML = formulario({ num: p.numero, ...p });
   const cont = raiz.querySelector('#resultados');
 
   raiz.querySelector('#ir-numero').addEventListener('submit', ev => {
