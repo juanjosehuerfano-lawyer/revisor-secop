@@ -108,8 +108,9 @@ export async function consultar(nombre, params = {}, { sinCache = false } = {}) 
   const token = obtenerToken();
   if (token) headers['X-App-Token'] = token;
   let resp;
-  // Hay consultas que datos.gov.co nunca termina: se cortan al minuto para no dejar la pantalla esperando.
-  const pedir = () => fetch(url, { headers, signal: AbortSignal.timeout(60000) });
+  // Hay consultas que datos.gov.co nunca termina: se cortan a los 3 minutos para no dejar la pantalla esperando
+  // (un nombre de entidad poco común tardó 54 s el 2026-11-17).
+  const pedir = () => fetch(url, { headers, signal: AbortSignal.timeout(180000) });
   try {
     resp = await pedir();
     // datos.gov.co responde a veces 503 en conjuntos grandes y al momento ya contesta: un solo reintento.
@@ -119,7 +120,7 @@ export async function consultar(nombre, params = {}, { sinCache = false } = {}) 
     }
   } catch (e) {
     throw new ErrorConsulta(e.name === 'TimeoutError'
-      ? 'datos.gov.co tardó más de un minuto y la consulta se canceló. Intenta de nuevo o acota la búsqueda: menos palabras, un rango de fechas o el NIT.'
+      ? 'datos.gov.co tardó más de tres minutos y la consulta se canceló. Intenta de nuevo o acota la búsqueda: menos palabras, un rango de fechas o el NIT.'
       : 'No hay conexión con datos.gov.co.', url, conjunto);
   }
   if (!resp.ok) {
