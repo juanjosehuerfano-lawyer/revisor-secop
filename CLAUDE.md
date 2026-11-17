@@ -36,3 +36,4 @@ App web (PWA) de uso personal para un abogado de contratación estatal en Colomb
 - Un proceso de SECOP II tiene una fila por fase en `p6dx-8zbt` (mismo `id_del_portafolio`). Los plazos se calculan con la primera publicación de todas las fases.
 - Evita `like '%…%'` sobre URL (13–55 s). Usa igualdades o `like 'prefijo%'`. Ver docs/esquemas.md, hallazgo 12.
 - Cuando cambie el SMMLV, actualiza `js/smmlv.js`.
+- Búsqueda (`js/vistas/buscar.js`): cuatro fuentes en `FUENTES` (contratos, procesos SECOP II, SECOP I con procesos sin contrato, Tienda Virtual `rgxm-mmea`). El número se busca idéntico y además con `$q`, y se ordena con `claveNumero()`. El nombre del contratista va por `$q` y se filtra en el navegador. Antes de cambiar una consulta de búsqueda lee docs/esquemas.md, hallazgo 19: el mismo filtro responde en 1 s o nunca según qué tan común sea la palabra.

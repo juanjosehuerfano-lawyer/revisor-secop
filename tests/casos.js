@@ -6,7 +6,7 @@ import {
 } from '../js/reglas.js';
 import { festivos, diasHabilesEntre } from '../js/festivos.js';
 import { aCsv } from '../js/util.js';
-import { destinoNumero } from '../js/vistas/buscar.js';
+import { destinoNumero, claveNumero } from '../js/vistas/buscar.js';
 
 function iguales(real, esperado, msg = '') {
   if (JSON.stringify(real) !== JSON.stringify(esperado)) throw new Error(`${msg} esperado ${JSON.stringify(esperado)}, obtenido ${JSON.stringify(real)}`);
@@ -252,6 +252,14 @@ export const CASOS = [
     iguales(destinoNumero('https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.123&isFromPublicArea=True'), '#/buscar?numero=CO1.NTC.123');
     iguales(destinoNumero('co1.pccntr.8934192'), '#/contrato/CO1.PCCNTR.8934192');
     iguales(destinoNumero('1504 DE 2021'), '#/buscar?numero=1504%20DE%202021');
+  }],
+
+  ['Buscar por número: compara sin mayúsculas, separadores, tildes ni ceros a la izquierda', () => {
+    iguales(claveNumero('Licitacionpublica_21_2020'), claveNumero('LICITACIONPUBLICA 21-2020'));
+    iguales(claveNumero('LP-001-2020'), claveNumero('lp 1 2020'));
+    iguales(claveNumero('1504 DE 2021'), '1504de2021');
+    iguales(claveNumero('CPS-010') === claveNumero('CPS-100'), false);
+    iguales(claveNumero('000'), '0');
   }],
 
   // ----- Exportación a CSV

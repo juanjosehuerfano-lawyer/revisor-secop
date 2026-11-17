@@ -11,6 +11,7 @@ export const CONJUNTOS = {
   proveedores: { id: 'qmzu-gj57', nombre: 'SECOP II – Proveedores registrados' },
   paa:         { id: 'b6m4-qgqv', nombre: 'SECOP II – Plan Anual de Adquisiciones (encabezado)' },
   secop1:      { id: 'f789-7hwg', nombre: 'SECOP I – Procesos de Compra Pública' },
+  tienda:      { id: 'rgxm-mmea', nombre: 'Tienda Virtual del Estado Colombiano – Consolidado' },
   // Trae el valor total del contrato después de cada modificación (no el valor de la adición). Ver docs/esquemas.md, hallazgo 18.
   modificaciones: { id: 'u8cx-r425', nombre: 'SECOP II – Modificaciones a contratos' },
   proponentes: { id: 'hgi6-6wh3', nombre: 'SECOP II – Proponentes por Proceso' },
@@ -107,15 +108,19 @@ export async function consultar(nombre, params = {}, { sinCache = false } = {}) 
   const token = obtenerToken();
   if (token) headers['X-App-Token'] = token;
   let resp;
+  // Hay consultas que datos.gov.co nunca termina: se cortan al minuto para no dejar la pantalla esperando.
+  const pedir = () => fetch(url, { headers, signal: AbortSignal.timeout(60000) });
   try {
-    resp = await fetch(url, { headers });
+    resp = await pedir();
     // datos.gov.co responde a veces 503 en conjuntos grandes y al momento ya contesta: un solo reintento.
     if (resp.status >= 500) {
       await new Promise(r => setTimeout(r, 1500));
-      resp = await fetch(url, { headers });
+      resp = await pedir();
     }
-  } catch {
-    throw new ErrorConsulta('No hay conexión con datos.gov.co.', url, conjunto);
+  } catch (e) {
+    throw new ErrorConsulta(e.name === 'TimeoutError'
+      ? 'datos.gov.co tardó más de un minuto y la consulta se canceló. Intenta de nuevo o acota la búsqueda: menos palabras, un rango de fechas o el NIT.'
+      : 'No hay conexión con datos.gov.co.', url, conjunto);
   }
   if (!resp.ok) {
     let detalle = '';
