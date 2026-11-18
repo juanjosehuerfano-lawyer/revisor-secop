@@ -4,7 +4,8 @@ import { esc, almacen, fmtFecha, fechaISO, NR } from '../util.js';
 import { REGLAS } from '../normas.js';
 
 // Radar Público (radar/) es la app para la ciudadanía: comparte estas vistas con Radar Contractual.
-export const EN_RADAR = location.pathname.includes('/radar/');
+// publico.juanjosehuerfanocorredor.com sirve radar/ en la raíz (ver worker.js).
+export const EN_RADAR = location.pathname.includes('/radar/') || location.hostname.startsWith('publico.');
 
 /** Router por hash de las dos apps. rutas: [[regex, (raiz, match, params) => void, pestaña]]. */
 export function arrancar(rutas, porDefecto) {

@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+.impeccable
+.wrangler
+node_modules
+docs
+tests
+tools
+*.md
+package.json
+package-lock.json
+wrangler.jsonc
+worker.js
+.assetsignore
+.gitignore
+.nojekyll
