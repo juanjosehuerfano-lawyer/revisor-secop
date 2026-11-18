@@ -1,6 +1,6 @@
 // Service worker de Radar Público. Comparte el código con Radar Contractual (../js) pero guarda su propia caché:
 // cada app borra solo las cachés con su prefijo.
-const VERSION = 'radar-publico-v2';
+const VERSION = 'radar-publico-v3';
 const ARCHIVOS = [
   './', 'index.html', 'manifest.webmanifest', 'icons/icono.svg', 'icons/icono-192.png', '../css/app.css',
   '../js/radar.js', '../js/api.js', '../js/util.js', '../js/reglas.js', '../js/normas.js', '../js/festivos.js', '../js/smmlv.js',
