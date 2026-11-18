@@ -2,15 +2,22 @@
 name: Radar Contractual
 description: Un contrato público como recorrido con estaciones, tablero de cifras y texto anotado con su norma.
 colors:
-  azul-medianoche: "#0e1b3d"
-  amarillo-vial: "#ffcd00"
-  suelo-frio: "#f3f5fa"
+  azul-marino: "#0b192c"
+  cian-contractual: "#00e5ff"
+  cian-activo: "#00b8cc"
+  verde-publico: "#00a86b"
+  verde-boton-publico: "#008553"
+  verde-activo-publico: "#006e45"
+  amarillo-semaforo-revisar: "#ffcd00"
+  suelo: "#f8fafc"
   papel: "#ffffff"
-  panel: "#e6ebf5"
-  texto-suave: "#46557a"
-  regla-fina: "#c9d1e4"
-  borde-campo: "#8e9bbf"
-  enlace: "#1e4fcc"
+  panel: "#f1f5f9"
+  titulos: "#1e293b"
+  texto-suave: "#64748b"
+  regla-fina: "#e2e8f0"
+  borde-campo: "#94a3b8"
+  enlace-contractual: "#007a99"
+  enlace-publico: "#007a4d"
   rubrica: "#b3261e"
   alerta: "#c4261b"
   revisar: "#7a5200"
@@ -121,6 +128,8 @@ components:
 ---
 
 # Design System: Radar Contractual
+
+> **Paletas (2026-11-18, pedidas por el abogado):** las dos apps comparten azul marino `#0b192c`, fondo `#f8fafc`, tarjetas blancas con borde `#e2e8f0`, títulos `#1e293b` y texto secundario `#64748b`. Radar Contractual usa acento cian `#00e5ff` (texto `#0b192c`, hover `#00b8cc`); Radar Público, verde `#00a86b` (botón sólido `#008553` con texto blanco por contraste, hover `#006e45`), secciones en tarjetas y alertas en semáforo. El amarillo `#ffcd00` queda solo para la señal "Revisar". El tablero de cifras son tarjetas blancas con franja del acento. Pie con la firma "© 2026 • Desarrollado por Juan José Huérfano Corredor". Lo que diga abajo sobre el amarillo vial o "sin tarjetas" quedó reemplazado. Fuente pedida: Inter (pendiente; hoy Hanken Grotesk y Source Serif 4).
 
 ## Overview
 
