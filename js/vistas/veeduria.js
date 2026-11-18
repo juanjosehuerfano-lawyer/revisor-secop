@@ -4,7 +4,7 @@
 
 import { consultar, consultarSeguro, lit } from '../api.js';
 import { esc, valor, fmtCOP, fmtNum, fmtMillones, fmtFecha, fmtFechaHora, fechaISO, num, campo, fuenteChip, almacen, aCsv, descargar, NR } from '../util.js';
-import { cargando, errorHtml, seccion, tabla, alertaHtml, banda, tablero, ruta } from './comun.js';
+import { cargando, errorHtml, seccion, tabla, alertaHtml, banda, tablero, ruta, EN_RADAR } from './comun.js';
 import { claseModalidad, maxDirectasEnVentana, evaluarFraccionamiento, evaluarInicioAntesDeFirma } from '../reglas.js';
 import { botonSeguir, activarSeguir } from './casos.js';
 
@@ -19,7 +19,11 @@ const ETIQUETA_CLASE = {
   minima: 'Mínima cuantía', directa: 'Contratación directa', especial: 'Régimen especial', otra: 'Otras / no definida',
 };
 
-const AVISO = `<p class="aviso-legal">Ejercicio de veeduría con datos abiertos de SECOP Integrado (rpmr-utcd) y SECOP II. Los indicadores son señales para revisar,
+const AVISO = EN_RADAR
+  ? `<p class="aviso-legal">Radar Público es un mecanismo informativo con datos abiertos de SECOP Integrado (rpmr-utcd) y SECOP II. Las alertas señalan posibles irregularidades
+    o malas prácticas de contratación para que cada persona las verifique: no son hallazgos, ni juicios, ni afirman que alguien violó la ley. Un dato puede estar mal registrado en SECOP;
+    verifique cada caso en el expediente del SECOP antes de sacar conclusiones. No es asesoría legal.</p>`
+  : `<p class="aviso-legal">Ejercicio de veeduría con datos abiertos de SECOP Integrado (rpmr-utcd) y SECOP II. Los indicadores son señales para revisar,
   no conclusiones: cada caso debe verificarse en el expediente del SECOP. Las reglas están pendientes de validación jurídica hasta que se marquen en la pestaña Reglas.</p>`;
 
 // NIT con o sin dígito de verificación: SECOP lo escribe de varias formas ("844004799-6", "8440041972").
@@ -95,7 +99,7 @@ const suma = lista => lista.reduce((s, c) => s + (c.valor || 0), 0);
 function accionesVeeduria(base, caso, hayContratos) {
   return `<button type="button" data-accion="imprimir">Exportar a PDF</button>
     ${hayContratos ? '<button type="button" class="secundario" data-accion="csv">Descargar contratos (Excel)</button>' : ''}
-    ${botonSeguir({ ...caso, ruta: base })}`;
+    ${EN_RADAR ? '' : `${botonSeguir({ ...caso, ruta: base })}<a class="boton secundario" href="radar/${esc(location.hash)}" target="_blank" rel="noopener">Abrir en Radar Público</a>`}`;
 }
 
 function formularioPeriodo(base, p) {
@@ -405,7 +409,9 @@ export function vistaVeeduria(raiz, params) {
   const tipo = params.get('tipo') || 'entidad';
   const q = params.get('q') || '';
   raiz.innerHTML = `
-    ${banda({ titulo: 'Veeduría', meta: 'Analiza en su conjunto la contratación de una entidad o de un proveedor: modalidades, concentración, contratación directa repetida, posible fraccionamiento, competencia y contratos con valores distintos.' })}
+    ${EN_RADAR
+      ? banda({ titulo: '¿Cómo contrata su entidad?', meta: 'Busque una alcaldía, gobernación, hospital o cualquier entidad pública, o un contratista, y vea sus contratos con datos abiertos del SECOP y alertas informativas para verificar. <a href="#/como">Cómo leer las alertas</a>.' })
+      : banda({ titulo: 'Veeduría', meta: 'Analiza en su conjunto la contratación de una entidad o de un proveedor: modalidades, concentración, contratación directa repetida, posible fraccionamiento, competencia y contratos con valores distintos.' })}
     <section class="tarjeta">
       <form id="form-veeduria">
         <div class="grilla-form">

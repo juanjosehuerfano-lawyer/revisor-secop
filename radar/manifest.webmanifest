@@ -1,0 +1,17 @@
+{
+  "name": "Radar Público: Veeduría SECOP",
+  "short_name": "Radar Público",
+  "description": "Vea cómo contratan las entidades públicas de Colombia, con datos abiertos del SECOP y alertas informativas para verificar.",
+  "lang": "es-CO",
+  "start_url": "./#/veeduria",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e1b3d",
+  "theme_color": "#0e1b3d",
+  "icons": [
+    { "src": "icons/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icono.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

@@ -210,6 +210,8 @@ td { font-variant-numeric: tabular-nums; }
 /* Alertas anotadas: señal por forma, texto en serif y la norma al margen */
 .alerta { counter-increment: articulo; display: grid; grid-template-columns: 36px minmax(0, 1fr) minmax(200px, 300px); column-gap: 16px; align-items: start; padding: 14px 0; border-top: 1px solid var(--borde); }
 .senal { width: 36px; height: 36px; }
+.nivel-ej { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; white-space: nowrap; }
+.nivel-ej .senal { width: 20px; height: 20px; }
 .s-forma { fill: var(--s-fondo); stroke: var(--s-borde, none); stroke-width: 1.6; stroke-linejoin: round; }
 .s-simbolo { fill: none; stroke: var(--s-tinta, #fff); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .s-alta { --s-fondo: #d92d20; }

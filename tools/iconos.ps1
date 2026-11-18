@@ -27,3 +27,23 @@ foreach ($tam in 180, 192, 512) {
   $g.Dispose(); $bmp.Dispose()
 }
 "Iconos generados en $dir"
+
+# Radar Publico (radar/icons/icono.svg): dos anillos, el barrido y un punto amarillo, con los mismos colores.
+$dirRadar = Join-Path $PSScriptRoot '..\radar\icons'
+foreach ($tam in 180, 192, 512) {
+  $bmp = New-Object System.Drawing.Bitmap $tam, $tam
+  $g = [System.Drawing.Graphics]::FromImage($bmp)
+  $g.SmoothingMode = 'AntiAlias'
+  $g.ScaleTransform($tam / 64, $tam / 64)
+  $g.Clear((Color '#0e1b3d'))
+  $anillo = New-Object System.Drawing.Pen (Color '#ffffff'), 3.5
+  $g.DrawEllipse($anillo, 12, 12, 40, 40)
+  $g.DrawEllipse($anillo, 22, 22, 20, 20)
+  $barrido = New-Object System.Drawing.Pen (Color '#ffffff'), 5
+  $barrido.StartCap = 'Round'; $barrido.EndCap = 'Round'
+  $g.DrawLine($barrido, 32, 32, 46, 18)
+  $g.FillEllipse((New-Object System.Drawing.SolidBrush (Color '#ffcd00')), 38, 36, 12, 12)
+  $bmp.Save((Join-Path $dirRadar "icono-$tam.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+  $g.Dispose(); $bmp.Dispose()
+}
+"Iconos generados en $dirRadar"

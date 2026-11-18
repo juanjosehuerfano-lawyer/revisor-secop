@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Radar Público: Veeduría SECOP</title>
+  <meta name="description" content="Vea cómo contratan las entidades públicas de Colombia, con datos abiertos del SECOP y alertas informativas para verificar.">
+  <meta name="theme-color" content="#0e1b3d">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icono-180.png">
+  <link rel="preload" href="../fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+  <a class="saltar" href="#vista">Ir al contenido</a>
+  <header class="barra">
+    <div class="barra-in">
+      <a class="marca" href="#/veeduria"><img src="icons/icono.svg" alt="" width="30" height="30"><span>Radar <b>Público</b></span></a>
+      <nav class="pestanas" aria-label="Secciones">
+        <a data-tab="veeduria" href="#/veeduria"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar</span></a>
+        <a data-tab="como" href="#/como"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.7 9.7a2.4 2.4 0 1 1 3.5 2.1c-.8.5-1.2 1-1.2 1.9M12 16.9v.2"/></svg><span>Cómo leerlo</span></a>
+        <a href="../#/buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg><span>Revisor SECOP</span></a>
+      </nav>
+    </div>
+  </header>
+  <main id="vista" tabindex="-1"></main>
+  <footer class="pie">Radar Público: Veeduría SECOP. Datos: <a href="https://www.datos.gov.co" target="_blank" rel="noopener">datos.gov.co</a> (Colombia Compra Eficiente).
+    Mecanismo informativo: las alertas no son hallazgos ni juicios y deben verificarse en SECOP. No es asesoría legal.
+    Para revisar un contrato en detalle: <a href="../#/buscar">Revisor SECOP</a>.</footer>
+  <script type="module" src="../js/radar.js"></script>
+</body>
+</html>

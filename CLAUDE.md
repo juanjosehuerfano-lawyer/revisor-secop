@@ -22,6 +22,7 @@ App web (PWA) de uso personal para un abogado de contratación estatal en Colomb
 - `js/vistas/veeduria.js`: veeduría de una entidad (`#/entidad/<nit>?desde=&hasta=`) o de un proveedor (`#/proveedor/<doc>`), y su buscador (`#/veeduria`). Los totales se calculan en el navegador tras quitar duplicados; no uses `$group` de la API para sumar valores (ver docs/esquemas.md, hallazgo 13).
 - Publicación: GitHub Pages, desde la rama `main` de `juanjosehuerfano-lawyer/revisor-secop`. Al cambiar archivos de la interfaz, sube `VERSION` en `sw.js`.
 - `sw.js` y `manifest.webmanifest`: PWA.
+- **Radar Público: Veeduría SECOP** (`radar/`): segunda app, para la ciudadanía, con su propio `index.html`, manifiesto, `sw.js` e íconos (`radar/icons/`, también en `tools/iconos.ps1`). Comparte `js/` y `css/` con Revisor: arranca en `js/radar.js` y su página "Cómo leerlo" está en `js/vistas/radar.js`. Solo trae la veeduría; las fichas de contratos se abren en Revisor (`../#/contrato/…`), y Revisor enlaza a Radar desde cada veeduría. `EN_RADAR` (`js/vistas/comun.js`) cambia los textos: en Radar las alertas son "informativas, no hallazgos ni juicios" y no hay casos ni validación. Si un cambio toca archivos que usa Radar, sube también `VERSION` en `radar/sw.js`; cada service worker borra solo las cachés con su prefijo.
 
 ## Correr
 - Servidor local: `powershell -ExecutionPolicy Bypass -File tools/servidor.ps1` y luego abrir http://localhost:5173. Los módulos ES no cargan desde `file://`.

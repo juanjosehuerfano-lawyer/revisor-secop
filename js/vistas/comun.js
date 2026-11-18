@@ -3,6 +3,36 @@
 import { esc, almacen, fmtFecha, fechaISO, NR } from '../util.js';
 import { REGLAS } from '../normas.js';
 
+// Radar Público (radar/) es la app para la ciudadanía: comparte estas vistas con Revisor SECOP.
+export const EN_RADAR = location.pathname.includes('/radar/');
+
+/** Router por hash de las dos apps. rutas: [[regex, (raiz, match, params) => void, pestaña]]. */
+export function arrancar(rutas, porDefecto) {
+  function navegar() {
+    const [ruta, query = ''] = (location.hash.slice(1) || porDefecto).split('?');
+    const params = new URLSearchParams(query);
+    // Cada vista recibe un contenedor nuevo para no acumular listeners.
+    const viejo = document.getElementById('vista');
+    const raiz = viejo.cloneNode(false);
+    viejo.replaceWith(raiz);
+    for (const [re, fn, tab] of rutas) {
+      const m = ruta.match(re);
+      if (m) {
+        document.querySelectorAll('[data-tab]').forEach(a => a.setAttribute('aria-current', a.dataset.tab === tab ? 'page' : 'false'));
+        fn(raiz, m, params);
+        window.scrollTo(0, 0);
+        return;
+      }
+    }
+    location.hash = '#' + porDefecto;
+  }
+  window.addEventListener('hashchange', navegar);
+  navegar();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* la app funciona sin service worker */ });
+  }
+}
+
 const ETIQUETAS = {
   alta: 'Alerta', media: 'Revisar', ok: 'Sin alerta', info: 'Información', sin_datos: 'Sin datos suficientes',
 };
@@ -54,7 +84,7 @@ export function alertaHtml(idRegla, resultado, detalle) {
   const nivel = ETIQUETAS[resultado.nivel] || resultado.nivel;
   return `<article class="alerta n-${resultado.nivel}">${senal(resultado.nivel)}
     <div><h4><span class="sr">${nivel}: </span>${esc(r.titulo)}</h4><p>${detalle}</p></div>
-    <aside class="nota"><b>${nivel}</b>${esc(r.norma)}<span class="validacion">${esc(estadoValidacion(idRegla))}</span></aside>
+    <aside class="nota"><b>${nivel}</b>${esc(r.norma)}<span class="validacion">${esc(EN_RADAR ? 'Alerta informativa: no es un hallazgo ni un juicio. Verifíquela en SECOP.' : estadoValidacion(idRegla))}</span></aside>
   </article>`;
 }
 
