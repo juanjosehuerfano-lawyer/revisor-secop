@@ -79,11 +79,14 @@ main { max-width: 1120px; margin: 0 auto; padding: 0 20px 56px; outline: none; c
 /* Radar Público: secciones en tarjetas y alertas con semáforo (franja y fondo del color del nivel). */
 [data-app="radar"] .seccion { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 4px 20px 20px; }
 [data-app="radar"] .seccion > h3 { border-top: 0; }
-[data-app="radar"] .alerta { margin: 12px 0; padding: 14px 16px; border: 1px solid var(--borde); border-left: 5px solid var(--sin); border-radius: 10px; }
-[data-app="radar"] .alerta.n-alta { border-left-color: var(--alta); background: var(--alta-fondo); }
-[data-app="radar"] .alerta.n-media { border-left-color: var(--ruta-media); background: var(--media-fondo); }
-[data-app="radar"] .alerta.n-ok { border-left-color: var(--ok); background: var(--ok-fondo); }
-[data-app="radar"] .alerta.n-info { border-left-color: var(--info); background: var(--info-fondo); }
+/* El nivel se lee por la forma de la señal y el fondo de color; el borde fino toma el tono del nivel. */
+[data-app="radar"] .alerta { --nivel: var(--sin); margin: 12px 0; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--nivel) 40%, var(--borde)); border-radius: 10px; }
+[data-app="radar"] .alerta.n-alta { --nivel: var(--alta); background: var(--alta-fondo); }
+[data-app="radar"] .alerta.n-media { --nivel: var(--ruta-media); background: var(--media-fondo); }
+[data-app="radar"] .alerta.n-ok { --nivel: var(--ok); background: var(--ok-fondo); }
+[data-app="radar"] .alerta.n-info { --nivel: var(--info); background: var(--info-fondo); }
+/* Sobre los fondos de color, el gris secundario no alcanza 4,5:1: se oscurece. */
+@media (prefers-color-scheme: light) { [data-app="radar"] .alerta { --texto-suave: #475569; } }
 
 /* Franja azul del título. La sombra la extiende de borde a borde sin sacar el contenido de la columna. */
 .cielo { background: var(--cielo); color: var(--cielo-texto); box-shadow: 0 0 0 100vmax var(--cielo); clip-path: inset(0 -100vmax); padding: 24px 0 30px; }
@@ -134,7 +137,7 @@ button.est-texto:hover b { text-decoration: underline; text-underline-offset: .1
 /* Tablero de cifras */
 /* Tarjetas blancas con la franja del acento de la app (cian o verde) */
 .tablero { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
-.tablero > div { flex: 1 1 auto; min-width: min(200px, 100%); padding: 12px 18px 14px; background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); border-top: 4px solid var(--senal); border-radius: 10px; }
+.tablero > div { flex: 1 1 auto; min-width: min(200px, 100%); padding: 12px 18px 14px; background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); border-top: 4px solid var(--senal); }
 .tablero dt { font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--texto-suave); }
 .tablero dd { margin: 3px 0 0; font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .tablero dd small { font-size: .94rem; font-weight: 600; white-space: nowrap; }
