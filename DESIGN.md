@@ -46,47 +46,47 @@ colors:
   impresion-suave: "#333"
 typography:
   titulo-franja:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1.625rem"
     fontWeight: 800
     lineHeight: 1.18
   cifra-tablero:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1.9rem"
     fontWeight: 800
     lineHeight: 1.1
   seccion:
-    fontFamily: "Source Serif 4, Georgia, serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1.4rem"
     fontWeight: 700
     lineHeight: 1.25
   alerta-titulo:
-    fontFamily: "Source Serif 4, Georgia, serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1.12rem"
     fontWeight: 600
     lineHeight: 1.3
   cuerpo:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
   subtitulo:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 800
     lineHeight: 1.2
   dato:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "0.94rem"
     fontWeight: 400
     lineHeight: 1.5
   nota:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "0.84rem"
     fontWeight: 400
     lineHeight: 1.45
   rotulo:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "0.72rem"
     fontWeight: 700
     letterSpacing: "0.1em"

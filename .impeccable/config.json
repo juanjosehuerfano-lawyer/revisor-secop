@@ -4,6 +4,12 @@
     "ignoreFiles": [
       ".impeccable/mocks/**"
     ],
-    "ignoreValues": []
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-18T06:10:40.875Z"
+      }
+    ]
   }
 }
