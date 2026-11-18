@@ -1,49 +1,23 @@
-# Genera los iconos PNG de la PWA (192, 512 y 180 para iOS) con el mismo dibujo de icons/icono.svg:
-# una ruta blanca con tres estaciones sobre azul medianoche; la ultima estacion va en amarillo.
-Add-Type -AssemblyName System.Drawing
-$dir = Join-Path $PSScriptRoot '..\icons'
+# Genera los iconos PNG de las dos apps (180 para iOS, 192 y 512) a partir de su icono.svg, con Edge sin ventana:
+# asi el PNG es siempre el mismo dibujo del SVG. Edita el SVG y vuelve a correr este script.
+#   icons/icono.svg        -> Radar Contractual
+#   radar/icons/icono.svg  -> Radar Publico
+# En el PNG el fondo llena el cuadro (sin esquinas redondeadas): el celular le pone su propia mascara.
+$edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $edge) { throw 'No se encontro Microsoft Edge.' }
+$raiz = Resolve-Path (Join-Path $PSScriptRoot '..')
+$tmp = Join-Path ([System.IO.Path]::GetTempPath()) 'iconos-radar'
+New-Item -ItemType Directory -Force $tmp | Out-Null
 
-function Color($hex) { [System.Drawing.ColorTranslator]::FromHtml($hex) }
-function Punto($x, $y) { New-Object System.Drawing.PointF $x, $y }
-
-foreach ($tam in 180, 192, 512) {
-  $bmp = New-Object System.Drawing.Bitmap $tam, $tam
-  $g = [System.Drawing.Graphics]::FromImage($bmp)
-  $g.SmoothingMode = 'AntiAlias'
-  $g.ScaleTransform($tam / 64, $tam / 64)
-  $g.Clear((Color '#0e1b3d'))
-  $linea = New-Object System.Drawing.Pen (Color '#ffffff'), 5
-  $linea.StartCap = 'Round'; $linea.EndCap = 'Round'; $linea.LineJoin = 'Round'
-  $g.DrawLines($linea, [System.Drawing.PointF[]]@((Punto 14 44), (Punto 28 44), (Punto 40 30), (Punto 50 30)))
-  $fondo = New-Object System.Drawing.SolidBrush (Color '#0e1b3d')
-  $anillo = New-Object System.Drawing.Pen (Color '#ffffff'), 3.5
-  foreach ($c in @(@(15, 44), @(34, 37))) {
-    $x = $c[0] - 6; $y = $c[1] - 6
-    $g.FillEllipse($fondo, $x, $y, 12, 12)
-    $g.DrawEllipse($anillo, $x, $y, 12, 12)
+foreach ($dir in 'icons', 'radar\icons') {
+  $svg = Get-Content -Raw -Encoding UTF8 (Join-Path $raiz "$dir\icono.svg")
+  foreach ($tam in 180, 192, 512) {
+    $html = Join-Path $tmp "icono-$tam.html"
+    $cuadrado = $svg -replace 'rx="14"', 'rx="0"'
+    Set-Content -Encoding UTF8 $html "<!doctype html><style>html,body{margin:0;overflow:hidden}svg{display:block;width:${tam}px;height:${tam}px}</style>$cuadrado"
+    $png = Join-Path $raiz "$dir\icono-$tam.png"
+    & $edge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 "--window-size=$tam,$tam" "--screenshot=$png" "file:///$($html -replace '\\', '/')" 2>$null | Out-Null
+    if (-not (Test-Path $png)) { throw "No se genero $png" }
   }
-  $g.FillEllipse((New-Object System.Drawing.SolidBrush (Color '#ffcd00')), 41, 22, 16, 16)
-  $bmp.Save((Join-Path $dir "icono-$tam.png"), [System.Drawing.Imaging.ImageFormat]::Png)
-  $g.Dispose(); $bmp.Dispose()
+  "Iconos generados en $dir"
 }
-"Iconos generados en $dir"
-
-# Radar Publico (radar/icons/icono.svg): dos anillos, el barrido y un punto amarillo, con los mismos colores.
-$dirRadar = Join-Path $PSScriptRoot '..\radar\icons'
-foreach ($tam in 180, 192, 512) {
-  $bmp = New-Object System.Drawing.Bitmap $tam, $tam
-  $g = [System.Drawing.Graphics]::FromImage($bmp)
-  $g.SmoothingMode = 'AntiAlias'
-  $g.ScaleTransform($tam / 64, $tam / 64)
-  $g.Clear((Color '#0e1b3d'))
-  $anillo = New-Object System.Drawing.Pen (Color '#ffffff'), 3.5
-  $g.DrawEllipse($anillo, 12, 12, 40, 40)
-  $g.DrawEllipse($anillo, 22, 22, 20, 20)
-  $barrido = New-Object System.Drawing.Pen (Color '#ffffff'), 5
-  $barrido.StartCap = 'Round'; $barrido.EndCap = 'Round'
-  $g.DrawLine($barrido, 32, 32, 46, 18)
-  $g.FillEllipse((New-Object System.Drawing.SolidBrush (Color '#ffcd00')), 38, 36, 12, 12)
-  $bmp.Save((Join-Path $dirRadar "icono-$tam.png"), [System.Drawing.Imaging.ImageFormat]::Png)
-  $g.Dispose(); $bmp.Dispose()
-}
-"Iconos generados en $dirRadar"
