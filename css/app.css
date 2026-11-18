@@ -1,4 +1,4 @@
-/* Revisor SECOP. Tres piezas propias: la franja azul con la ruta (.cielo, .ruta), el tablero de cifras (.tablero)
+/* Radar Contractual. Tres piezas propias: la franja azul con la ruta (.cielo, .ruta), el tablero de cifras (.tablero)
    y las alertas anotadas con la norma al margen (.alerta, .nota). El resto son controles web corrientes. Ver DESIGN.md. */
 
 @font-face { font-family: "Hanken Grotesk"; font-weight: 400 800; font-display: swap; src: url(../fonts/hanken-grotesk-latin.woff2) format("woff2"); }

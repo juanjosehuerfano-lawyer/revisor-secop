@@ -1,4 +1,4 @@
-// Arranque de Radar Público: veeduría para la ciudadanía. Las fichas de contratos y procesos se abren en Revisor SECOP.
+// Arranque de Radar Público: veeduría para la ciudadanía. Las fichas de contratos y procesos se abren en Radar Contractual.
 
 import { vistaVeeduria, vistaEntidad, vistaProveedor } from './vistas/veeduria.js';
 import { vistaComoLeer } from './vistas/radar.js';

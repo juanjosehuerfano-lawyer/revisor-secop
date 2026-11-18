@@ -1,5 +1,5 @@
 ---
-name: Revisor SECOP
+name: Radar Contractual
 description: Un contrato público como recorrido con estaciones, tablero de cifras y texto anotado con su norma.
 colors:
   azul-medianoche: "#0e1b3d"
@@ -120,7 +120,7 @@ components:
     padding: "12px 18px 14px"
 ---
 
-# Design System: Revisor SECOP
+# Design System: Radar Contractual
 
 ## Overview
 

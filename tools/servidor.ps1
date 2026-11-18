@@ -10,7 +10,7 @@ $tipos = @{
 $http = New-Object System.Net.HttpListener
 $http.Prefixes.Add("http://localhost:$Puerto/")
 $http.Start()
-Write-Host "Revisor SECOP en http://localhost:$Puerto/  (Ctrl+C para detener)"
+Write-Host "Radar Contractual en http://localhost:$Puerto/  (Ctrl+C para detener)"
 try {
   while ($http.IsListening) {
     $ctx = $http.GetContext()

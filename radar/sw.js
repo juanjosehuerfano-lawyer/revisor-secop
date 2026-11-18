@@ -1,4 +1,4 @@
-// Service worker de Radar Público. Comparte el código con Revisor SECOP (../js) pero guarda su propia caché:
+// Service worker de Radar Público. Comparte el código con Radar Contractual (../js) pero guarda su propia caché:
 // cada app borra solo las cachés con su prefijo.
 const VERSION = 'radar-publico-v1';
 const ARCHIVOS = [

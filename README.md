@@ -1,4 +1,4 @@
-# Revisor SECOP
+# Radar Contractual
 
 App web instalable (PWA) para revisar procesos y contratos de entidades públicas de Colombia con los datos abiertos del SECOP (datos.gov.co).
 

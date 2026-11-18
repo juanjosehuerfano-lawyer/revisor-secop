@@ -61,7 +61,7 @@ function crearRespaldo() {
 function restaurarRespaldo(texto) {
   let r;
   try { r = JSON.parse(texto); } catch { throw new Error('El archivo no es una copia de seguridad válida.'); }
-  if (r?.app !== 'revisor-secop' || typeof r.datos !== 'object' || r.datos === null) throw new Error('El archivo no es una copia de seguridad de Revisor SECOP.');
+  if (r?.app !== 'revisor-secop' || typeof r.datos !== 'object' || r.datos === null) throw new Error('El archivo no es una copia de seguridad de Radar Contractual.');
   const claves = Object.keys(r.datos).filter(k => CLAVES_RESPALDO.test(k));
   if (!claves.length) throw new Error('La copia de seguridad está vacía.');
   if (!confirm(`Se restaurarán ${claves.length} elemento(s). Reemplazan los datos guardados con el mismo nombre (por ejemplo, tu lista de casos). ¿Continuar?`)) return 0;

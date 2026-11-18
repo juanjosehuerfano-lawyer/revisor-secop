@@ -1,6 +1,6 @@
 {
-  "name": "Revisor SECOP",
-  "short_name": "SECOP",
+  "name": "Radar Contractual: Búsqueda en SECOP",
+  "short_name": "Radar Contractual",
   "description": "Revisión de procesos y contratos públicos de Colombia con datos abiertos del SECOP.",
   "lang": "es-CO",
   "start_url": "./#/buscar",

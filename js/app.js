@@ -1,4 +1,4 @@
-// Router por hash y arranque de Revisor SECOP. Radar Público arranca en js/radar.js.
+// Router por hash y arranque de Radar Contractual. Radar Público arranca en js/radar.js.
 
 import { vistaBuscar } from './vistas/buscar.js';
 import { vistaContrato, vistaProceso, vistaSecop1 } from './vistas/ficha.js';

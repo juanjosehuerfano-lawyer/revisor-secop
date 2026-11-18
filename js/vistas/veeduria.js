@@ -121,7 +121,7 @@ function exportarCsv({ contratos, consultas }, nombreArchivo) {
   descargar(nombreArchivo, aCsv(
     ['Contrato', 'Sistema', 'Entidad', 'NIT entidad', 'Proveedor', 'Documento proveedor', 'Modalidad', 'Clase de modalidad', 'Tipo de contrato',
       'Firma', 'Inicio de ejecución', 'Fin de ejecución', 'Días de inicio antes de la firma', 'Valor (mayor reportado)', 'Valor menor reportado',
-      'Filas en SECOP Integrado', 'Estado', 'Objeto', 'Ficha en Revisor SECOP', 'Fuente', 'Consultado'],
+      'Filas en SECOP Integrado', 'Estado', 'Objeto', 'Ficha en Radar Contractual', 'Fuente', 'Consultado'],
     contratos.map(c => [c.id, c.origen === 'SECOPI' ? 'SECOP I' : 'SECOP II', c.entidad, c.nitEntidad, c.nombreProveedor, c.proveedor, c.modalidad,
       ETIQUETA_CLASE[c.clase], c.tipo, c.fecha, c.inicio, c.fin, evaluarInicioAntesDeFirma({ fechaFirma: c.fecha, fechaInicio: c.inicio }).dias,
       c.valor, c.valorMin, c.filas, c.estado, c.objeto, app + href(c), fuente, consultado])));

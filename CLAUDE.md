@@ -1,4 +1,4 @@
-# Revisor SECOP — guía del proyecto
+# Radar Contractual: Búsqueda en SECOP (antes Revisor SECOP) — guía del proyecto
 
 App web (PWA) de uso personal para un abogado de contratación estatal en Colombia. El brief original está en `docs/BRIEF.md` y los esquemas reales de los conjuntos están en `docs/esquemas.md`. Lee ambos antes de cambiar consultas.
 

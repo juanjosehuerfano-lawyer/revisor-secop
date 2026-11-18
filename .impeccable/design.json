@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-12T09:38:42-05:00",
-  "title": "Design System: Revisor SECOP",
+  "title": "Design System: Radar Contractual",
   "extensions": {
     "colorMeta": {
       "azul-medianoche": { "role": "primary", "displayName": "Azul medianoche", "canonical": "#0e1b3d", "tonalRamp": ["#060b1c", "#0e1b3d", "#1d2f63", "#2a3a66", "#b9c3de"] },
@@ -57,7 +57,7 @@
   ],
   "narrative": {
     "northStar": "El contrato como recorrido, valla y código anotado",
-    "overview": "Revisor SECOP muestra un contrato público como un recorrido con estaciones, un tablero de cifras y un texto anotado con su norma. No usa tarjetas ni sombras: la jerarquía la llevan la letra, las reglas y tres campos de color.",
+    "overview": "Radar Contractual muestra un contrato público como un recorrido con estaciones, un tablero de cifras y un texto anotado con su norma. No usa tarjetas ni sombras: la jerarquía la llevan la letra, las reglas y tres campos de color.",
     "keyCharacteristics": ["Franja azul medianoche con la ruta del contrato", "Tablero amarillo de cifras", "Alertas numeradas con la norma al margen", "Señales por forma, no solo por color", "PDF sobrio en blanco y negro"],
     "rules": [
       { "name": "El nivel no depende del color", "body": "Cada nivel de alerta tiene una forma propia y se escribe en la nota del margen.", "section": "colors" },

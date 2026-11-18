@@ -74,7 +74,7 @@ function encabezado({ etiqueta, numero, titulo, entidad, proveedor, url, extra =
     extra: ruta(estaciones, nombreRuta),
   }) + tablero(celdas)
     + (url ? '' : `<p class="nr">Enlace al SECOP: ${NR}</p>`)
-    + `<p class="solo-imprimir">Ficha generada el ${esc(fmtFechaHora(new Date()))} con Revisor SECOP. Las fuentes y las horas de consulta están al final del documento.</p>`;
+    + `<p class="solo-imprimir">Ficha generada el ${esc(fmtFechaHora(new Date()))} con Radar Contractual. Las fuentes y las horas de consulta están al final del documento.</p>`;
 }
 
 function enlacesVeeduria(nitEntidad, docProveedor) {

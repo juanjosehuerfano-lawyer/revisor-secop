@@ -41,7 +41,7 @@ export function vistaComoLeer(raiz) {
     ${seccion('c-alertas', 'Las alertas', tarjetas + `<p class="norma">Además, la página muestra cifras sin calificar: contratación por modalidad, concentración en pocos contratistas y contratos que SECOP publica con valores distintos.
       La licitación pública es la regla general (Ley 1150 de 2007, art. 2): una proporción alta de contratación directa no es ilegal por sí misma, pero orienta la revisión.</p>`)}
     ${seccion('c-hacer', 'Si encuentra algo que le preocupa', `<ol>
-      <li>Verifique el contrato en SECOP: el enlace "Ver en SECOP" de cada contrato abre el expediente. El número del contrato abre su ficha detallada en Revisor SECOP.</li>
+      <li>Verifique el contrato en SECOP: el enlace "Ver en SECOP" de cada contrato abre el expediente. El número del contrato abre su ficha detallada en Radar Contractual.</li>
       <li>Pida información a la entidad con un derecho de petición (Ley 1755 de 2015). La información de la contratación pública es pública (Ley 1712 de 2014).</li>
       <li>Si quiere hacer seguimiento organizado, puede conformar una veeduría ciudadana (Ley 850 de 2003).</li>
       <li>Si después de verificar persiste la duda, puede ponerla en conocimiento de la Personería, la Contraloría o la Procuraduría.</li>
