@@ -21,4 +21,4 @@ Abre la página publicada. En el celular, usa "Agregar a pantalla de inicio" o "
 - Servidor local: `powershell -ExecutionPolicy Bypass -File tools/servidor.ps1` → http://localhost:5173
 - Pruebas de reglas: http://localhost:5173/tests/
 - Esquemas reales de la API y hallazgos: `docs/esquemas.md`. Guía del proyecto: `CLAUDE.md`. Diseño: `DESIGN.md`.
-- Letras Hanken Grotesk y Source Serif 4, en `fonts/`, con licencia SIL Open Font License.
+- Letra Inter, en `fonts/`, con licencia SIL Open Font License.

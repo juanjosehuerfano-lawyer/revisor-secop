@@ -16,7 +16,7 @@ App web (PWA) de uso personal para un abogado de contratación estatal en Colomb
 - `js/vistas/casos.js`: casos guardados con notas (`localStorage`, clave `casos`). El botón "Guardar en mis casos" está en las fichas y en la veeduría. Si agregas otra clave de datos del abogado, inclúyela en `CLAVES_RESPALDO` de `js/vistas/reglas.js`.
 - Exportar a Excel: `aCsv()` y `descargar()` de `js/util.js`. Las celdas vacías son datos no reportados; no escribas valores por defecto en el CSV.
 - Diseño: lee `DESIGN.md` antes de tocar la interfaz. Cada vista abre con `banda()` (franja azul), las fichas y veedurías llevan `ruta()` y `tablero()`, y todo bloque de datos va en `seccion()` para que quede numerado. Las alertas se pintan solo con `alertaHtml()`. Todos están en `js/vistas/comun.js`.
-- Letras: Hanken Grotesk y Source Serif 4, servidas desde `fonts/` (licencia SIL OFL, textos en la misma carpeta). No enlaces fuentes externas; si agregas un archivo de letra, inclúyelo en `ARCHIVOS` de `sw.js`.
+- Letras: Inter, servida desde `fonts/` (licencia SIL OFL, textos en la misma carpeta). No enlaces fuentes externas; si agregas un archivo de letra, inclúyelo en `ARCHIVOS` de `sw.js`.
 - Íconos: `icons/icono.svg` (Radar Contractual) y `radar/icons/icono.svg` (Radar Público) son los logos. `tools/iconos.ps1` hace los PNG desde esos SVG con Edge: cambia el SVG y vuelve a correr el script.
 - Clases CSS: `.barra` es la barra superior. No la reutilices.
 - `js/vistas/veeduria.js`: veeduría de una entidad (`#/entidad/<nit>?desde=&hasta=`) o de un proveedor (`#/proveedor/<doc>`), y su buscador (`#/veeduria`). Los totales se calculan en el navegador tras quitar duplicados; no uses `$group` de la API para sumar valores (ver docs/esquemas.md, hallazgo 13).

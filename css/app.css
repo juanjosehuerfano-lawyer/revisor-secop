@@ -1,8 +1,7 @@
 /* Radar Contractual. Tres piezas propias: la franja azul con la ruta (.cielo, .ruta), el tablero de cifras (.tablero)
    y las alertas anotadas con la norma al margen (.alerta, .nota). El resto son controles web corrientes. Ver DESIGN.md. */
 
-@font-face { font-family: "Hanken Grotesk"; font-weight: 400 800; font-display: swap; src: url(../fonts/hanken-grotesk-latin.woff2) format("woff2"); }
-@font-face { font-family: "Source Serif 4"; font-weight: 400 700; font-display: swap; src: url(../fonts/source-serif-4-latin.woff2) format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 100 900; font-display: swap; src: url(../fonts/inter-latin.woff2) format("woff2"); }
 
 :root {
   /* Franja y barra: azul marino profundo en las dos apps */
@@ -18,8 +17,9 @@
   --ok: #0e7a4a; --ok-fondo: #e4f4eb; --info: #1e4fcc; --info-fondo: #e7edfc; --sin: #5b6782;
   /* Líneas de la ruta */
   --ruta-pre: #1e6bff; --ruta-eje: #1fa05a; --ruta-alta: #e4002b; --ruta-media: #f5a300; --ruta-neutra: #8e9bbf;
-  --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Todo va en Inter (pedido del abogado, 2026-11-18). Se conserva el nombre --serif para títulos de sección y alertas. */
+  --serif: var(--sans);
   --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   color-scheme: light; accent-color: var(--acento); caret-color: var(--acento); scrollbar-color: var(--borde-campo) transparent;
 }

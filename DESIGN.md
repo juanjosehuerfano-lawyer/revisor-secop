@@ -129,7 +129,7 @@ components:
 
 # Design System: Radar Contractual
 
-> **Paletas (2026-11-18, pedidas por el abogado):** las dos apps comparten azul marino `#0b192c`, fondo `#f8fafc`, tarjetas blancas con borde `#e2e8f0`, títulos `#1e293b` y texto secundario `#64748b`. Radar Contractual usa acento cian `#00e5ff` (texto `#0b192c`, hover `#00b8cc`); Radar Público, verde `#00a86b` (botón sólido `#008553` con texto blanco por contraste, hover `#006e45`), secciones en tarjetas y alertas en semáforo. El amarillo `#ffcd00` queda solo para la señal "Revisar". El tablero de cifras son tarjetas blancas con franja del acento. Pie con la firma "© 2026 • Desarrollado por Juan José Huérfano Corredor". Lo que diga abajo sobre el amarillo vial o "sin tarjetas" quedó reemplazado. Fuente pedida: Inter (pendiente; hoy Hanken Grotesk y Source Serif 4).
+> **Paletas (2026-11-18, pedidas por el abogado):** las dos apps comparten azul marino `#0b192c`, fondo `#f8fafc`, tarjetas blancas con borde `#e2e8f0`, títulos `#1e293b` y texto secundario `#64748b`. Radar Contractual usa acento cian `#00e5ff` (texto `#0b192c`, hover `#00b8cc`); Radar Público, verde `#00a86b` (botón sólido `#008553` con texto blanco por contraste, hover `#006e45`), secciones en tarjetas y alertas en semáforo. El amarillo `#ffcd00` queda solo para la señal "Revisar". El tablero de cifras son tarjetas blancas con franja del acento. Pie con la firma "© 2026 • Desarrollado por Juan José Huérfano Corredor". Lo que diga abajo sobre el amarillo vial o "sin tarjetas" quedó reemplazado. Fuente: Inter en todo (`fonts/inter-latin.woff2`); lo que diga abajo sobre Hanken Grotesk y Source Serif 4 quedó reemplazado.
 
 ## Overview
 
