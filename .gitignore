@@ -7,3 +7,4 @@ docs/muestras/
 !.impeccable/design.json
 !.impeccable/config.json
 docs/diseno/
+.wrangler/

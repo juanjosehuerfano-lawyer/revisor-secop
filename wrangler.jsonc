@@ -1,0 +1,11 @@
+// Publicación en Cloudflare (Workers Builds la corre sola en cada cambio de main). GitHub Pages sigue igual.
+{
+  "name": "radar-secop",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": ".", "binding": "ASSETS", "run_worker_first": true },
+  "routes": [
+    { "pattern": "contractual.juanjosehuerfanocorredor.com", "custom_domain": true },
+    { "pattern": "publico.juanjosehuerfanocorredor.com", "custom_domain": true }
+  ]
+}
