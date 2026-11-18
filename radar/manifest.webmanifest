@@ -6,8 +6,8 @@
   "start_url": "./#/veeduria",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0e1b3d",
-  "theme_color": "#0e1b3d",
+  "background_color": "#0b192c",
+  "theme_color": "#0b192c",
   "icons": [
     { "src": "icons/icono-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icono-512.png", "sizes": "512x512", "type": "image/png" },
