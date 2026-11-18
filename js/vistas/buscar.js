@@ -225,8 +225,11 @@ async function ejecutarBusqueda(cont, p) {
     const igual = x => [x.numero, x.referencia, x.contrato].some(v => v && claveNumero(v) === clave);
     if (clave) filas.sort((a, b) => igual(b) - igual(a));
     const sinExactas = clave && filas.length && !filas.some(igual);
+    // El número real del contrato de SECOP I solo está en esa lista (docs/esquemas.md, hallazgo 19).
+    const otraLista = clave && p.fuente !== 'secop1' && !filas.some(igual)
+      ? `<p class="ayuda-campo">Si es un contrato de SECOP I, su número (por ejemplo "1504 DE 2021") solo está en otra lista: <a href="${hashBusqueda({ ...p, fuente: 'secop1', origen: '', pagina: '' })}">buscar el mismo número en Procesos y contratos (SECOP I)</a>.</p>` : '';
     const aviso = (ocultas ? `<p class="ayuda-campo">En esta página se ocultaron ${ocultas} resultado(s) que no traen esas palabras en el nombre del contratista o de la entidad.</p>` : '')
-      + (sinExactas ? `<p class="ayuda-campo">Ningún resultado de esta página tiene el número escrito igual a "${esc(p.num)}": lo traen con otra escritura (por ejemplo "N° 001 DE 2021") o en el objeto. Revisa la referencia de cada uno.</p>` : '');
+      + (sinExactas ? `<p class="ayuda-campo">Ningún resultado de esta página tiene el número escrito igual a "${esc(p.num)}": lo traen con otra escritura (por ejemplo "N° 001 DE 2021") o en el objeto. Revisa la referencia de cada uno.</p>` : '') + otraLista;
     const nav = `<nav class="paginacion">
       ${pagina > 0 ? `<a class="boton secundario" href="${hashBusqueda({ ...p, pagina: pagina - 1 })}">Anterior</a>` : '<span></span>'}
       <span>Página ${pagina + 1}</span>

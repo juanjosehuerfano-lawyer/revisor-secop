@@ -56,7 +56,9 @@ export function whereAviso(campo, ntc) {
 export function patronLike(texto) {
   const base = String(texto).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim()
     .replace(/'/g, "''").replace(/[%_]/g, '');
-  return `'%${base.replace(/[AEIOU]/g, '_')}%'`;
+  // Palabra por palabra y en orden, sin "DE", "LA"…: "Corporación Autónoma de Cundinamarca" encuentra "…AUTÓNOMA REGIONAL DE CUNDINAMARCA".
+  const largas = base.split(/[^A-Z0-9Ñ]+/).filter(w => w.length > 2);
+  return `'%${(largas.length ? largas.join('%') : base).replace(/[AEIOU]/g, '_')}%'`;
 }
 
 const BASE = 'https://www.datos.gov.co/resource/';

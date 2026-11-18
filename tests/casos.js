@@ -7,6 +7,7 @@ import {
 import { festivos, diasHabilesEntre } from '../js/festivos.js';
 import { aCsv } from '../js/util.js';
 import { destinoNumero, claveNumero } from '../js/vistas/buscar.js';
+import { patronLike } from '../js/api.js';
 
 function iguales(real, esperado, msg = '') {
   if (JSON.stringify(real) !== JSON.stringify(esperado)) throw new Error(`${msg} esperado ${JSON.stringify(esperado)}, obtenido ${JSON.stringify(real)}`);
@@ -252,6 +253,12 @@ export const CASOS = [
     iguales(destinoNumero('https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.123&isFromPublicArea=True'), '#/buscar?numero=CO1.NTC.123');
     iguales(destinoNumero('co1.pccntr.8934192'), '#/contrato/CO1.PCCNTR.8934192');
     iguales(destinoNumero('1504 DE 2021'), '#/buscar?numero=1504%20DE%202021');
+  }],
+
+  ['Filtro de entidad: busca palabra por palabra, aunque falte una o sobre "de"', () => {
+    iguales(patronLike('Corporación Autónoma de Cundinamarca'), "'%C_RP_R_C__N%__T_N_M_%C_ND_N_M_RC_%'");
+    iguales(patronLike('Sopó'), "'%S_P_%'");
+    iguales(patronLike('de'), "'%D_%'");
   }],
 
   ['Buscar por número: compara sin mayúsculas, separadores, tildes ni ceros a la izquierda', () => {
