@@ -1,6 +1,6 @@
 {
-  "name": "Radar Público: Veeduría SECOP",
-  "short_name": "Radar Público",
+  "name": "Lupa Contractual Ciudadana: Veeduría SECOP",
+  "short_name": "Lupa Ciudadana",
   "description": "Vea cómo contratan las entidades públicas de Colombia, con datos abiertos del SECOP y alertas informativas para verificar.",
   "lang": "es-CO",
   "start_url": "./#/veeduria",

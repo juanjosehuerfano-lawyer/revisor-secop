@@ -20,7 +20,7 @@ const ETIQUETA_CLASE = {
 };
 
 const AVISO = EN_RADAR
-  ? `<p class="aviso-legal">Radar Público es un mecanismo informativo con datos abiertos de SECOP Integrado (rpmr-utcd) y SECOP II. Las alertas señalan posibles irregularidades
+  ? `<p class="aviso-legal">Lupa Contractual Ciudadana es un mecanismo informativo con datos abiertos de SECOP Integrado (rpmr-utcd) y SECOP II. Las alertas señalan posibles irregularidades
     o malas prácticas de contratación para que cada persona las verifique: no son hallazgos, ni juicios, ni afirman que alguien violó la ley. Un dato puede estar mal registrado en SECOP;
     verifique cada caso en el expediente del SECOP antes de sacar conclusiones. No es asesoría legal.</p>`
   : `<p class="aviso-legal">Ejercicio de veeduría con datos abiertos de SECOP Integrado (rpmr-utcd) y SECOP II. Los indicadores son señales para revisar,
@@ -99,7 +99,7 @@ const suma = lista => lista.reduce((s, c) => s + (c.valor || 0), 0);
 function accionesVeeduria(base, caso, hayContratos) {
   return `<button type="button" data-accion="imprimir">Exportar a PDF</button>
     ${hayContratos ? '<button type="button" class="secundario" data-accion="csv">Descargar contratos (Excel)</button>' : ''}
-    ${EN_RADAR ? '' : `${botonSeguir({ ...caso, ruta: base })}<a class="boton secundario" href="radar/${esc(location.hash)}" target="_blank" rel="noopener">Abrir en Radar Público</a>`}`;
+    ${EN_RADAR ? '' : `${botonSeguir({ ...caso, ruta: base })}<a class="boton secundario" href="radar/${esc(location.hash)}" target="_blank" rel="noopener">Abrir en Lupa Contractual Ciudadana</a>`}`;
 }
 
 function formularioPeriodo(base, p) {
