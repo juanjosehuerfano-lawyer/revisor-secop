@@ -1,7 +1,7 @@
 # Genera los iconos PNG de las dos apps (180 para iOS, 192 y 512) a partir de su icono.svg, con Edge sin ventana:
 # asi el PNG es siempre el mismo dibujo del SVG. Edita el SVG y vuelve a correr este script.
 #   icons/icono.svg        -> Radar Contractual
-#   radar/icons/icono.svg  -> Radar Publico
+#   radar/icons/icono.svg  -> Lupa Contractual Ciudadana
 # En el PNG el fondo llena el cuadro (sin esquinas redondeadas): el celular le pone su propia mascara.
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $edge) { throw 'No se encontro Microsoft Edge.' }
@@ -27,7 +27,7 @@ $fuente = "file:///$((Join-Path $raiz 'fonts\inter-latin.woff2') -replace '\\', 
 $previas = @(
   # Tildes como entidades HTML: PowerShell 5.1 lee este archivo sin BOM como ANSI.
   @{ dir = 'icons';       nombre = 'Radar <b>Contractual</b>';    sub = 'B&uacute;squeda en SECOP'; texto = 'Procesos y contratos de SECOP I y SECOP II, con la fuente de cada dato.'; color = '#00e5ff' },
-  @{ dir = 'radar\icons'; nombre = 'Radar <b>P&uacute;blico</b>'; sub = 'Veedur&iacute;a SECOP';    texto = '&iquest;C&oacute;mo contrata su entidad? Contratos p&uacute;blicos de Colombia para la ciudadan&iacute;a.'; color = '#00a86b' }
+  @{ dir = 'radar\icons'; nombre = 'Lupa Contractual <b>Ciudadana</b>'; sub = 'Veedur&iacute;a SECOP';    texto = '&iquest;C&oacute;mo contrata su entidad? Contratos p&uacute;blicos de Colombia para la ciudadan&iacute;a.'; color = '#00a86b' }
 )
 foreach ($p in $previas) {
   $svg = Get-Content -Raw -Encoding UTF8 (Join-Path $raiz "$($p.dir)\icono.svg")

@@ -1,4 +1,4 @@
-// Radar Público: página "Cómo leerlo", con las alertas explicadas en lenguaje sencillo para la ciudadanía.
+// Lupa Contractual Ciudadana: página "Cómo leerlo", con las alertas explicadas en lenguaje sencillo para la ciudadanía.
 // Las normas se toman de js/normas.js para que las dos apps citen lo mismo.
 
 import { esc } from '../util.js';
@@ -34,7 +34,7 @@ export function vistaComoLeer(raiz) {
 
   raiz.innerHTML = `
     ${banda({ titulo: 'Cómo leer el Radar', meta: 'Qué significa cada alerta, por qué importa y cómo verificarla usted mismo en SECOP.' })}
-    ${seccion('c-que', 'Qué es una alerta', `<p>Radar Público es un mecanismo informativo. Una alerta señala un dato del SECOP que <strong>puede</strong> indicar una irregularidad o una mala práctica de contratación.
+    ${seccion('c-que', 'Qué es una alerta', `<p>Lupa Contractual Ciudadana es un mecanismo informativo. Una alerta señala un dato del SECOP que <strong>puede</strong> indicar una irregularidad o una mala práctica de contratación.
       <strong>No es un hallazgo, ni un juicio, ni afirma que alguien violó la ley.</strong> Los datos pueden estar mal registrados, y casi todo tiene explicaciones posibles.
       Por eso cada alerta trae la norma relacionada y el enlace para verificar en el expediente del SECOP.</p>
       <p>Los niveles se distinguen por la forma de la señal: <span class="nivel-ej">${senal('media')} Revisar</span> <span class="nivel-ej">${senal('ok')} Sin alerta</span> <span class="nivel-ej">${senal('sin_datos')} Sin datos suficientes</span></p>`)}
@@ -47,5 +47,5 @@ export function vistaComoLeer(raiz) {
       <li>Si después de verificar persiste la duda, puede ponerla en conocimiento de la Personería, la Contraloría o la Procuraduría.</li>
     </ol>`)}
     ${seccion('c-datos', 'De dónde salen los datos', `<p>De los datos abiertos de Colombia Compra Eficiente en <a href="https://www.datos.gov.co" target="_blank" rel="noopener">datos.gov.co</a>: SECOP Integrado (SECOP I y II) y SECOP II.
-      Cada página dice qué conjunto consultó, la consulta exacta y la hora. Las entidades de régimen especial o que no publicaron en SECOP no aparecen. Radar Público no es asesoría legal.</p>`)}`;
+      Cada página dice qué conjunto consultó, la consulta exacta y la hora. Las entidades de régimen especial o que no publicaron en SECOP no aparecen. Lupa Contractual Ciudadana no es asesoría legal.</p>`)}`;
 }
