@@ -12,7 +12,7 @@ App web instalable (PWA) para revisar procesos y contratos de entidades pública
 - **Casos:** guarda contratos, procesos, entidades y proveedores con tus notas, y descarga una copia de seguridad desde Ajustes.
 - Incluye ayudas en lenguaje sencillo, exporta a PDF y descarga los contratos de una veeduría en un archivo para Excel (CSV).
 
-La app nunca inventa datos: si SECOP no reporta un campo, lo dice. Es una herramienta de apoyo y no reemplaza la revisión del expediente completo en SECOP. Las reglas quedan pendientes de validación jurídica.
+La app nunca inventa datos: si SECOP no reporta un campo, lo dice. Es una herramienta de apoyo y no reemplaza la revisión del expediente completo en SECOP. Las alertas son una guía básica de posibles hallazgos: quien consulta debe verificarlas en el expediente del SECOP.
 
 ## Uso
 Abre la página publicada. En el celular, usa "Agregar a pantalla de inicio" o "Instalar app".

@@ -47,11 +47,6 @@ export function errorHtml(e) {
   return `<div class="aviso aviso-error" role="alert"><strong>No se pudo consultar.</strong> ${esc(e?.message || e)}${enlace}</div>`;
 }
 
-export function estadoValidacion(idRegla) {
-  const v = almacen.leer('validaciones', {})[idRegla];
-  return v ? `Validada por el abogado el ${fmtFecha(v.fecha)}` : 'Pendiente de validación jurídica';
-}
-
 // Franja azul con el título de la vista. `titulo`, `meta`, `acciones` y `extra` son HTML: quien llama escapa los datos.
 export function banda({ titulo, meta = '', acciones = '', extra = '' }) {
   return `<header class="cielo"><div class="cielo-cab"><div><h2>${titulo}</h2>${meta ? `<p class="cielo-meta">${meta}</p>` : ''}</div>
@@ -79,13 +74,13 @@ export function senal(nivel) {
   return `<svg class="senal s-${n}" viewBox="0 0 24 24" aria-hidden="true">${FORMA[n]}${SIMBOLO[n]}</svg>`;
 }
 
-// Alerta anotada: señal, resultado de la regla y, al margen, el nivel, la norma y el estado de validación.
+// Alerta anotada: señal, resultado de la regla y, al margen, el nivel, la norma y el aviso de que es informativa.
 export function alertaHtml(idRegla, resultado, detalle) {
   const r = REGLAS.find(x => x.id === idRegla);
   const nivel = ETIQUETAS[resultado.nivel] || resultado.nivel;
   return `<article class="alerta n-${resultado.nivel}">${senal(resultado.nivel)}
     <div><h4><span class="sr">${nivel}: </span>${esc(r.titulo)}</h4><p>${detalle}</p></div>
-    <aside class="nota"><b>${nivel}</b>${esc(r.norma)}<span class="validacion">${esc(EN_RADAR ? 'Alerta informativa: no es un hallazgo ni un juicio. Verifíquela en SECOP.' : estadoValidacion(idRegla))}</span></aside>
+    <aside class="nota"><b>${nivel}</b>${esc(r.norma)}<span class="validacion">${'Alerta informativa: no es un hallazgo ni un juicio. Verifíquela en SECOP.'}</span></aside>
   </article>`;
 }
 

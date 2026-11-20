@@ -15,7 +15,7 @@ Lo que la app produce (pantalla, PDF y Excel) también lo ven sus clientes, los 
 Revisar procesos y contratos públicos con los datos abiertos del SECOP (datos.gov.co): buscar, abrir un contrato por su número, analizar la etapa precontractual y la ejecución, y hacer veeduría de una entidad o de un proveedor en su conjunto. El éxito es que el abogado encuentre en minutos los indicios que merecen revisión y pueda sustentarlos con la fuente oficial y la norma.
 
 ## Positioning
-Cada dato muestra su fuente oficial, la consulta exacta y la hora en que se hizo; cada alerta cita la norma y queda "pendiente de validación" hasta que el abogado la valida. La app nunca inventa un dato: si SECOP no lo trae, dice "No reportado en SECOP".
+Cada dato muestra su fuente oficial, la consulta exacta y la hora en que se hizo; cada alerta cita la norma y es una guía básica de posibles hallazgos que quien consulta debe verificar. La app nunca inventa un dato: si SECOP no lo trae, dice "No reportado en SECOP".
 
 ## Operating Context
 - Fuente: API de datos abiertos del SECOP I, SECOP II y SECOP Integrado. Sin servidor propio ni cuentas.

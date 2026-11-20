@@ -15,7 +15,7 @@ import { documentoBase } from './veeduria.js';
 
 const AVISO_LEGAL = `<p class="aviso-legal">Herramienta de apoyo a la revisión. No reemplaza el análisis del expediente completo en SECOP.
   Los datos provienen de datos.gov.co tal como los publica Colombia Compra Eficiente; cuando un campo no viene, se indica "${NR}".
-  Las reglas de alerta están pendientes de validación jurídica hasta que se marquen como validadas en la pestaña Reglas.</p>`;
+  Las alertas son una guía básica de posibles hallazgos: no son conclusiones y deben verificarse en el expediente del SECOP.</p>`;
 
 function noticeUID(url) {
   const m = String(url || '').match(/noticeUID=(CO1\.NTC\.\d+)/i);
