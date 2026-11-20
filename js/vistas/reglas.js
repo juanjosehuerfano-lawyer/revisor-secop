@@ -1,53 +1,32 @@
-// Pestaña Reglas (validación jurídica de cada regla) y Ajustes (token y caché).
+// Pestaña Reglas (guía de cada regla de alerta) y Ajustes (token y caché).
 
 import { esc, almacen, fmtCOP, fmtFecha, descargar } from '../util.js';
 import { REGLAS } from '../normas.js';
 import { SMMLV } from '../smmlv.js';
 import { limpiarCache } from '../api.js';
-import { estadoValidacion, banda } from './comun.js';
+import { banda } from './comun.js';
 
 export function vistaReglas(raiz) {
-  const pintar = () => {
-    const val = almacen.leer('validaciones', {});
-    raiz.innerHTML = `
-      ${banda({ titulo: 'Reglas de alerta', meta: 'Cada regla queda pendiente hasta que la valides. Al validarla, la fecha aparece en todas las alertas de esa regla. La validación se guarda solo en este navegador.' })}
-      ${REGLAS.map(r => `<section class="seccion regla">
-        <h3>${esc(r.titulo)}</h3>
-        <p>${esc(r.texto)}</p>
-        <dl class="grilla-datos">
-          <div class="campo"><dt>Norma</dt><dd>${esc(r.norma)}</dd></div>
-          <div class="campo"><dt>Cuándo se activa</dt><dd>${esc(r.umbral)}</dd></div>
-          <div class="campo"><dt>Límites</dt><dd>${esc(r.limites)}</dd></div>
-          <div class="campo"><dt>Estado</dt><dd>${esc(estadoValidacion(r.id))}</dd></div>
-        </dl>
-        <label class="ancho">Observación del abogado<textarea data-obs="${r.id}" rows="2">${esc(val[r.id]?.obs || '')}</textarea></label>
-        <div class="acciones">${val[r.id]
-          ? `<button type="button" class="secundario" data-quitar="${r.id}">Quitar validación</button>`
-          : `<button type="button" data-validar="${r.id}">Marcar como validada</button>`}</div>
-      </section>`).join('')}
-      <section class="seccion"><h3>Tabla de SMMLV usada</h3>
-        <p>Valores en pesos por año. Verifícalos contra los decretos del Gobierno. Para cambiarlos, edita <code>js/smmlv.js</code>.</p>
-        <div class="tabla-scroll"><table><thead><tr><th>Año</th><th>SMMLV</th></tr></thead><tbody>
-          ${Object.entries(SMMLV).reverse().map(([a, v]) => `<tr><td>${a}</td><td>${fmtCOP(v)}</td></tr>`).join('')}
-        </tbody></table></div></section>`;
-  };
-  pintar();
-  raiz.addEventListener('click', ev => {
-    const val = almacen.leer('validaciones', {});
-    const v = ev.target.dataset.validar, q = ev.target.dataset.quitar;
-    if (v) { val[v] = { fecha: new Date().toISOString().slice(0, 10), obs: raiz.querySelector(`[data-obs="${v}"]`).value }; almacen.guardar('validaciones', val); pintar(); }
-    if (q) { delete val[q]; almacen.guardar('validaciones', val); pintar(); }
-  });
-  raiz.addEventListener('input', ev => {
-    const id = ev.target.dataset.obs;
-    if (!id) return;
-    const val = almacen.leer('validaciones', {});
-    if (val[id]) { val[id].obs = ev.target.value; almacen.guardar('validaciones', val); }
-  });
+  raiz.innerHTML = `
+    ${banda({ titulo: 'Reglas de alerta', meta: 'Guía básica de posibles hallazgos. Cada alerta es un indicio para revisar, no una conclusión: quien consulta debe verificarla en el expediente del SECOP.' })}
+    ${REGLAS.map(r => `<section class="seccion regla">
+      <h3>${esc(r.titulo)}</h3>
+      <p>${esc(r.texto)}</p>
+      <dl class="grilla-datos">
+        <div class="campo"><dt>Norma</dt><dd>${esc(r.norma)}</dd></div>
+        <div class="campo"><dt>Cuándo se activa</dt><dd>${esc(r.umbral)}</dd></div>
+        <div class="campo"><dt>Límites</dt><dd>${esc(r.limites)}</dd></div>
+      </dl>
+    </section>`).join('')}
+    <section class="seccion"><h3>Tabla de SMMLV usada</h3>
+      <p>Valores en pesos por año. Verifícalos contra los decretos del Gobierno. Para cambiarlos, edita <code>js/smmlv.js</code>.</p>
+      <div class="tabla-scroll"><table><thead><tr><th>Año</th><th>SMMLV</th></tr></thead><tbody>
+        ${Object.entries(SMMLV).reverse().map(([a, v]) => `<tr><td>${a}</td><td>${fmtCOP(v)}</td></tr>`).join('')}
+      </tbody></table></div></section>`;
 }
 
 // Lo que el abogado escribe en la app. El token y la caché no entran en la copia de seguridad.
-const CLAVES_RESPALDO = /^(casos$|validaciones$|checklist:|adiciones:|fracc:)/;
+const CLAVES_RESPALDO = /^(casos$|checklist:|adiciones:|fracc:)/;
 
 function crearRespaldo() {
   const datos = {};
@@ -86,7 +65,7 @@ export function vistaAjustes(raiz) {
       <p id="msg-cache" class="ayuda-campo" aria-live="polite"></p>
     </section>
     <section class="seccion"><h3>Datos guardados en este navegador</h3>
-      <p>Tus casos y notas, las validaciones de reglas, los checklists, los valores de adiciones y los topes de fraccionamiento se guardan solo aquí. No salen de tu equipo.
+      <p>Tus casos y notas, los checklists, los valores de adiciones y los topes de fraccionamiento se guardan solo aquí. No salen de tu equipo.
         Si borras los datos del navegador o cambias de dispositivo, se pierden: descarga una copia de seguridad y restáurala cuando la necesites.</p>
       <div class="acciones">
         <button type="button" id="respaldar">Descargar copia de seguridad</button>

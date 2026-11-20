@@ -210,7 +210,7 @@ Barra azul fija arriba: marca a la izquierda, pestañas en píldora (blanca la a
 `tablero(celdas)`: celdas amarillas con rótulo en mayúsculas y cifra grande. Se usa una vez por vista, justo debajo de la franja.
 
 ### Alerta anotada
-`alertaHtml(regla, resultado, detalle)`: señal por forma, título numerado y cuerpo en serif; al margen, el nivel, la norma y el estado de validación.
+`alertaHtml(regla, resultado, detalle)`: señal por forma, título numerado y cuerpo en serif; al margen, el nivel, la norma y el aviso de que es informativa.
 
 ## Do's and Don'ts
 
